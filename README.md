@@ -118,33 +118,56 @@ The application separates concerns by distinguishing between **Read-Only Aggrega
 
 ## 📊 Application Output Screens
 
-Below are screenshots of the key screens, interactive views, and CRUD actions in Wealthify:
+Below are screenshots of the key screens and views in Wealthify:
 
-### 1. Dashboard Overview & Analytics
-Aggregated mutual fund metrics, portfolio weight chart, and capital allocations:
+### 1. Dashboard Overview (Top Analytics)
+Displays aggregated mutual fund metrics, capital weights, and allocations:
 ![Dashboard Overview Top](screenshots/dashboard_overview_top.png)
+
+### 2. Dashboard Overview (Performance Summary)
+Displays aggregated metrics per mutual fund scheme:
 ![Dashboard Overview Bottom](screenshots/dashboard_overview_bottom.png)
 
-### 2. Collapsible Aggregations (Summary Tables)
-* **Investor Summary**: Shows investors and expands to show their fund holdings:
-  ![Investor Summary Expanded](screenshots/investor_summary_expanded.png)
-* **Fund-wise Summary**: Shows mutual funds and expands to show investing clients:
-  ![Fund Summary Expanded](screenshots/fund_summary_expanded.png)
+### 3. Transactions Ledger
+Searchable, paginated registry of mutual fund transactions:
+![Transactions Ledger](screenshots/transactions_ledger.png)
 
-### 3. Actionable Registries & CRUD Operations
-* **Transactions Ledger**:
-  ![Transactions Ledger](screenshots/transactions_ledger.png)
-  ![Edit Transaction Modal](screenshots/edit_transaction_modal.png)
-* **All Investors Tab**:
-  ![Investors Registry](screenshots/investors_registry.png)
-  ![Add Investor Form](screenshots/add_investor_modal.png)
-  ![Edit Investor Form](screenshots/edit_investor_modal.png)
-* **All Funds Tab**:
-  ![Funds Registry](screenshots/funds_directory.png)
-  ![Add Fund Form](screenshots/add_fund_modal.png)
-  ![Edit Fund Form](screenshots/edit_fund_modal.png)
+### 4. Transaction CRUD Management Form
+Glassmorphic modal dialog form for adding or editing transaction records:
+![Transaction Form](screenshots/edit_transaction_modal.png)
 
-### 4. Swagger API Documentation
-FastAPI automatic interactive OpenAPI documentation showing all REST routes (GET, POST, PUT, DELETE) for Investors, Funds, Transactions, and Summary endpoints:
-![Swagger API Docs — Top (Investor & Fund Routes)](screenshots/swagger_docs_top.png)
-![Swagger API Docs — Bottom (Fund & Transaction CRUD Routes)](screenshots/swagger_docs_bottom.png)
+### 5. All Investors Registry
+Registry of investors with total net-worth aggregates:
+![Investors Registry](screenshots/investors_registry.png)
+
+### 6. Edit Investor Form
+Modal dialog to edit an existing investor's name and PAN number:
+![Edit Investor Modal](screenshots/edit_investor_modal.png)
+
+### 7. Add Investor Form
+Modal dialog to register a brand new investor:
+![Add Investor Modal](screenshots/add_investor_modal.png)
+
+### 8. All Funds Directory
+Complete list of all registered mutual fund schemes with AMC code and scheme type:
+![All Funds List](screenshots/all_funds_list.png)
+
+### 9. Edit Fund Form
+Modal dialog to edit an existing fund's name, AMC code, and scheme type:
+![Edit Fund Modal](screenshots/edit_fund_modal.png)
+
+### 10. Add Fund Form
+Modal dialog to register a new mutual fund scheme:
+![Add Fund Modal](screenshots/add_fund_modal.png)
+
+### 11. Investor Summary (Accordion View)
+Collapsible tree view showing each investor's total investment with nested fund breakdown:
+![Investor Summary Accordion](screenshots/investor_summary_accordion.png)
+
+### 12. Fund-wise Summary (Accordion View)
+Collapsible tree view showing each mutual fund with nested investor contribution breakdown:
+![Fund Summary Accordion](screenshots/fund_summary_accordion.png)
+
+### 13. Swagger API Documentation
+FastAPI automatic interactive OpenAPI route and schema documentation:
+![Swagger API Documentation](screenshots/swagger_docs.png)
