@@ -21,6 +21,25 @@ The application runs in both **Live Backend Mode** (connecting to a FastAPI/Post
 
 ---
 
+## 📋 Dashboard Views & CRUD Workflow
+
+The application separates concerns by distinguishing between **Read-Only Aggregated Reports** and **Actionable CRUD Registries**:
+
+### 1. Read-Only Analytical Views (No Direct CRUD)
+* **Dashboard Overview**: Displays real-time KPIs (Total Invested, Total Units, Avg NAV, Active Funds) and interactive charts.
+* **Investor Summary**: Shows clients with nested tree/accordion tables detailing fund-wise aggregates.
+* **Fund-wise Summary**: Shows mutual funds with nested client breakdown details.
+
+> [!NOTE]
+> These summaries are calculated dynamically. Any CRUD actions performed on transactions, investors, or funds will automatically and instantly update these reports.
+
+### 2. Actionable Registries (Full CRUD Enabled)
+* **All Investors Tab**: Add new investors, edit details (name/PAN), or delete investors.
+* **All Funds Tab**: Register new mutual fund schemes, edit names/AMC/types, or delete schemes.
+* **Transactions Tab**: Log new purchase transactions, edit amount/units/NAV/dates, or delete transaction records.
+
+---
+
 ## 🛠️ Technology Stack
 
 * **Frontend**: Vanilla HTML5, Modern CSS3 variables (Glassmorphism & animations), Custom JavaScript (ES6), Chart.js (v4.x).
