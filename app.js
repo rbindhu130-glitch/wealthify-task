@@ -509,7 +509,8 @@ class WealthifyApp {
     }
 
     renderCharts(data) {
-        const labels  = data.map(d => this.truncateLabel(d.mutual_fund, 25));
+        const fullLabels = data.map(d => d.mutual_fund);
+        const truncatedLabels = data.map(d => this.truncateLabel(d.mutual_fund, 25));
         const amounts = data.map(d => d.total_amount);
         const units   = data.map(d => d.total_units);
         const colors  = this.getThemeColors();
@@ -527,7 +528,7 @@ class WealthifyApp {
             this.charts.fundInvestment = new Chart(ctx1.getContext('2d'), {
                 type: 'bar',
                 data: {
-                    labels,
+                    labels: fullLabels,
                     datasets: [{
                         label: 'Total Invested (₹)',
                         data: amounts,
@@ -556,7 +557,15 @@ class WealthifyApp {
                     },
                     scales: {
                         x: {
-                            ticks: { color: colors.text, font: { size: 11 }, maxRotation: 45 },
+                            ticks: { 
+                                color: colors.text, 
+                                font: { size: 11 }, 
+                                maxRotation: 45,
+                                callback: function(val) {
+                                    const label = this.getLabelForValue(val);
+                                    return label.length > 25 ? label.substring(0, 25) + '…' : label;
+                                }
+                            },
                             grid: { display: false },
                         },
                         y: {
@@ -580,7 +589,7 @@ class WealthifyApp {
             this.charts.fundUnits = new Chart(ctx2.getContext('2d'), {
                 type: 'doughnut',
                 data: {
-                    labels,
+                    labels: truncatedLabels,
                     datasets: [{
                         data: units,
                         backgroundColor: chartColors.slice(0, units.length),
