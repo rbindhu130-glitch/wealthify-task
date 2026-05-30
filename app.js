@@ -118,7 +118,13 @@ class WealthifyApp {
 
         // Initialize mock lists if not present, and calculate initial mock aggregates in nested format
         if (typeof MOCK_DATA !== 'undefined') {
-            if (!MOCK_DATA['/investors/list']) {
+            const storedInvestors = localStorage.getItem('wealthify_investors');
+            const storedFunds = localStorage.getItem('wealthify_funds');
+            const storedTxns = localStorage.getItem('wealthify_transactions');
+
+            if (storedInvestors) {
+                MOCK_DATA['/investors/list'] = JSON.parse(storedInvestors);
+            } else {
                 MOCK_DATA['/investors/list'] = [
                     { id: 1, name: "M Padmapriya", pan_number: "ANIPP0516B" },
                     { id: 2, name: "K Shyma", pan_number: "ABCPS7064H" },
@@ -131,8 +137,12 @@ class WealthifyApp {
                     { id: 9, name: "Srijesh", pan_number: "EFBPS7950P" },
                     { id: 10, name: "Sheethal Balaji", pan_number: "DCSPS9502J" }
                 ];
+                localStorage.setItem('wealthify_investors', JSON.stringify(MOCK_DATA['/investors/list']));
             }
-            if (!MOCK_DATA['/funds/list']) {
+
+            if (storedFunds) {
+                MOCK_DATA['/funds/list'] = JSON.parse(storedFunds);
+            } else {
                 MOCK_DATA['/funds/list'] = [
                     { id: 1, name: "Mahindra Manulife Mid Cap Fund - Regular - Growth", amc_code: "MM", scheme_type: "Equity" },
                     { id: 2, name: "Kotak Gold Fund - Growth (Regular Plan)", amc_code: "K", scheme_type: "Gold" },
@@ -141,14 +151,19 @@ class WealthifyApp {
                     { id: 5, name: "DSP Nifty 50 Equal Weight Index Fund - Reg - Growth", amc_code: "DSP", scheme_type: "Equity" },
                     { id: 6, name: "ICICI Prudential Ultra Short Term Fund - Growth", amc_code: "ICICI", scheme_type: "Debt" }
                 ];
+                localStorage.setItem('wealthify_funds', JSON.stringify(MOCK_DATA['/funds/list']));
             }
-            if (!MOCK_DATA['/transactions']) {
+
+            if (storedTxns) {
+                MOCK_DATA['/transactions'] = JSON.parse(storedTxns);
+            } else {
                 MOCK_DATA['/transactions'] = [
                     { id: 1, investor_id: 1, fund_id: 3, transaction_date: "2025-05-27", amount: 20000.0, nav: 5952.38, units: 3.36, folio_no: "50100", location: "Mumbai", tax_status: "Individual" },
                     { id: 2, investor_id: 2, fund_id: 1, transaction_date: "2025-05-27", amount: 16499.18, nav: 32.45, units: 508.44, folio_no: "50200", location: "Mumbai", tax_status: "Individual" },
                     { id: 3, investor_id: 1, fund_id: 4, transaction_date: "2025-05-27", amount: 9999.5, nav: 167.72, units: 59.62, folio_no: "50300", location: "Mumbai", tax_status: "Individual" },
                     { id: 4, investor_id: 2, fund_id: 2, transaction_date: "2025-05-27", amount: 8499.58, nav: 36.90, units: 230.33, folio_no: "50400", location: "Mumbai", tax_status: "Individual" }
                 ];
+                localStorage.setItem('wealthify_transactions', JSON.stringify(MOCK_DATA['/transactions']));
             }
             this.recalculateMockAggregates();
         }
@@ -356,7 +371,7 @@ class WealthifyApp {
             if (MOCK_DATA[endpoint]) {
                 if (!this.shownMockNotice) {
                     this.shownMockNotice = true;
-                    this.showToast("Demo Mode: Loaded Offline Mock Data", "info");
+                    // Suppressed "Demo Mode: Loaded Offline Mock Data" toast popup
                 }
                 
                 let mockResult = [...MOCK_DATA[endpoint]];
@@ -1117,6 +1132,10 @@ class WealthifyApp {
             const newObj = { id: nextId, ...body };
             data.push(newObj);
             MOCK_DATA[baseEndpoint] = data;
+
+            if (baseEndpoint === '/investors/list') localStorage.setItem('wealthify_investors', JSON.stringify(data));
+            if (baseEndpoint === '/funds/list') localStorage.setItem('wealthify_funds', JSON.stringify(data));
+            if (baseEndpoint === '/transactions') localStorage.setItem('wealthify_transactions', JSON.stringify(data));
             
             this.recalculateMockAggregates();
             return newObj;
@@ -1129,6 +1148,11 @@ class WealthifyApp {
             if (index !== -1) {
                 data[index] = { ...data[index], ...body };
                 MOCK_DATA[baseEndpoint] = data;
+
+                if (baseEndpoint === '/investors/list') localStorage.setItem('wealthify_investors', JSON.stringify(data));
+                if (baseEndpoint === '/funds/list') localStorage.setItem('wealthify_funds', JSON.stringify(data));
+                if (baseEndpoint === '/transactions') localStorage.setItem('wealthify_transactions', JSON.stringify(data));
+
                 this.recalculateMockAggregates();
                 return data[index];
             }
@@ -1145,8 +1169,14 @@ class WealthifyApp {
 
                 if (baseEndpoint === '/investors/list') {
                     MOCK_DATA['/transactions'] = MOCK_DATA['/transactions'].filter(t => t.investor_id !== entityId);
+                    localStorage.setItem('wealthify_transactions', JSON.stringify(MOCK_DATA['/transactions']));
+                    localStorage.setItem('wealthify_investors', JSON.stringify(data));
                 } else if (baseEndpoint === '/funds/list') {
                     MOCK_DATA['/transactions'] = MOCK_DATA['/transactions'].filter(t => t.fund_id !== entityId);
+                    localStorage.setItem('wealthify_transactions', JSON.stringify(MOCK_DATA['/transactions']));
+                    localStorage.setItem('wealthify_funds', JSON.stringify(data));
+                } else if (baseEndpoint === '/transactions') {
+                    localStorage.setItem('wealthify_transactions', JSON.stringify(data));
                 }
                 
                 this.recalculateMockAggregates();
