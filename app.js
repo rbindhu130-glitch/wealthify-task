@@ -620,11 +620,7 @@ class WealthifyApp {
                             borderWidth: 1,
                             padding: 12,
                             callbacks: {
-                                title: (tooltipItems) => {
-                                    const index = tooltipItems[0].dataIndex;
-                                    return fullLabels[index];
-                                },
-                                label: (ctx) => ` ${this.formatNumber(ctx.parsed)} units`,
+                                label: (ctx) => ` ${fullLabels[ctx.dataIndex]}: ${this.formatNumber(ctx.parsed)} units`,
                             },
                         },
                     },
