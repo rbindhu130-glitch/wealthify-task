@@ -327,7 +327,7 @@ class DataService:
                 (Fund.name.ilike(f"%{search}%")) |
                 (Investor.pan_number.ilike(f"%{search}%"))
             )
-        q = q.order_by(Transaction.transaction_date.desc(), Transaction.id.desc())
+        q = q.order_by(Transaction.id.asc())
         return q.offset((page - 1) * limit).limit(limit).all()
 
 
