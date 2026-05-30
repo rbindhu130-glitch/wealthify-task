@@ -1343,7 +1343,7 @@ class WealthifyApp {
         Object.values(fndMap).forEach(f => {
             f.average_nav = f.total_units > 0 ? (f.total_amount / f.total_units) : 0;
         });
-        MOCK_DATA['/mutualfund-overall'] = Object.values(fndMap);
+        MOCK_DATA['/mutualfund-overall'] = Object.values(fndMap).sort((a, b) => b.total_amount - a.total_amount);
     }
 
     // ── CRUD View Fetch & Renderers ──
