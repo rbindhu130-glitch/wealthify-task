@@ -3,7 +3,7 @@
    Pure JavaScript dashboard — connects to FastAPI backend
    ═══════════════════════════════════════════════════════════════ */
 
-const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+const API_BASE = (window.location.port === '8000')
     ? '/api'
     : 'http://localhost:8000/api';
 
