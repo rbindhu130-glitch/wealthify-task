@@ -171,3 +171,7 @@ Collapsible tree view showing each mutual fund with nested investor contribution
 ### 13. Swagger API Documentation
 FastAPI automatic interactive OpenAPI route and schema documentation:
 ![Swagger API Documentation](screenshots/swagger_docs_top.png)
+
+### 14. Swagger API Documentation (Fund & Transaction Endpoints)
+Complete list of Fund and Transaction CRUD REST API routes:
+![Swagger API Documentation Bottom](screenshots/swagger_docs_bottom.png)
