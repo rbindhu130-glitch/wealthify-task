@@ -122,46 +122,85 @@ class WealthifyApp {
             const storedFunds = localStorage.getItem('wealthify_funds');
             const storedTxns = localStorage.getItem('wealthify_transactions');
 
-            if (storedInvestors) {
+            // Self-healing: if stored transactions list contains old dummy data (length < 10), clear it to load full CSV dataset
+            let isOldData = false;
+            if (storedTxns) {
+                try {
+                    const parsed = JSON.parse(storedTxns);
+                    if (Array.isArray(parsed) && parsed.length < 10) {
+                        isOldData = true;
+                    }
+                } catch(e) {}
+            }
+
+            if (storedInvestors && !isOldData) {
                 MOCK_DATA['/investors/list'] = JSON.parse(storedInvestors);
             } else {
                 MOCK_DATA['/investors/list'] = [
-                    { id: 1, name: "M Padmapriya", pan_number: "ANIPP0516B" },
-                    { id: 2, name: "K Shyma", pan_number: "ABCPS7064H" },
-                    { id: 3, name: "Meethala Pullutummal Narayani", pan_number: "AAEPN3766A" },
-                    { id: 4, name: "Avinash Wadhwani", pan_number: "ABAPW8282F" },
-                    { id: 5, name: "Manikandan N Nepolian", pan_number: "BHXPM3600B" },
-                    { id: 6, name: "S Vinoth Kumar", pan_number: "AFYPV6441F" },
-                    { id: 7, name: "Nivedhitha Rajagopal", pan_number: "AVNPN8269J" },
-                    { id: 8, name: "R Sethupathy", pan_number: "FPHPS1056H" },
-                    { id: 9, name: "Srijesh", pan_number: "EFBPS7950P" },
-                    { id: 10, name: "Sheethal Balaji", pan_number: "DCSPS9502J" }
+                    {"id": 1, "name": "Meethala Pullutummal Narayani", "pan_number": "AAEPN3766A"},
+                    {"id": 2, "name": "Shilpa J Suresh", "pan_number": "FRSPS3248J"},
+                    {"id": 3, "name": "Priyavarshini Damodaran", "pan_number": "HECPD7014E"},
+                    {"id": 4, "name": "Nivedhitha Rajagopal", "pan_number": "AVNPN8269J"},
+                    {"id": 5, "name": "S Vinoth Kumar", "pan_number": "AFYPV6441F"},
+                    {"id": 6, "name": "K Shyma", "pan_number": "ABCPS7064H"},
+                    {"id": 7, "name": "Srijesh", "pan_number": "EFBPS7950P"},
+                    {"id": 8, "name": "Manikandan N Nepolian", "pan_number": "BHXPM3600B"},
+                    {"id": 9, "name": "Avinash Wadhwani", "pan_number": "ABAPW8282F"},
+                    {"id": 10, "name": "R Sethupathy", "pan_number": "FPHPS1056H"},
+                    {"id": 11, "name": "M Padmapriya", "pan_number": "ANIPP0516B"},
+                    {"id": 12, "name": "Srividhya D", "pan_number": "BWHPS1316K"},
+                    {"id": 13, "name": "Sheethal Balaji", "pan_number": "DCSPS9502J"},
+                    {"id": 14, "name": "Anirudh D", "pan_number": "CEBPD0457D"},
+                    {"id": 15, "name": "Manushia Jain", "pan_number": "BCFPJ2150L"}
                 ];
                 localStorage.setItem('wealthify_investors', JSON.stringify(MOCK_DATA['/investors/list']));
             }
 
-            if (storedFunds) {
+            if (storedFunds && !isOldData) {
                 MOCK_DATA['/funds/list'] = JSON.parse(storedFunds);
             } else {
                 MOCK_DATA['/funds/list'] = [
-                    { id: 1, name: "Mahindra Manulife Mid Cap Fund - Regular - Growth", amc_code: "MM", scheme_type: "Equity" },
-                    { id: 2, name: "Kotak Gold Fund - Growth (Regular Plan)", amc_code: "K", scheme_type: "Gold" },
-                    { id: 3, name: "SBI Magnum Ultra Short Duration Fund Regular Growth", amc_code: "SBI", scheme_type: "Debt" },
-                    { id: 4, name: "SBI Small Cap Fund Regular Growth", amc_code: "SBI", scheme_type: "Equity" },
-                    { id: 5, name: "DSP Nifty 50 Equal Weight Index Fund - Reg - Growth", amc_code: "DSP", scheme_type: "Equity" },
-                    { id: 6, name: "ICICI Prudential Ultra Short Term Fund - Growth", amc_code: "ICICI", scheme_type: "Debt" }
+                    {"id": 1, "name": "DSP Nifty 50 Equal Weight Index Fund - Reg - Growth", "amc_code": "D", "scheme_type": "Index Fund"},
+                    {"id": 2, "name": "Kotak Gold Fund - Growth (Regular Plan)", "amc_code": "K", "scheme_type": "Gold FOF"},
+                    {"id": 3, "name": "SBI Magnum Ultra Short Duration Fund Regular Growth", "amc_code": "L", "scheme_type": "Ultra Liquid"},
+                    {"id": 4, "name": "SBI Small Cap Fund Regular Growth", "amc_code": "L", "scheme_type": "Equity(G)"},
+                    {"id": 5, "name": "Mahindra Manulife Mid Cap Fund - Regular - Growth", "amc_code": "MM", "scheme_type": "Equity(G)"},
+                    {"id": 6, "name": "ICICI Prudential Ultra Short Term Fund - Growth", "amc_code": "P", "scheme_type": "Ultra Liquid"}
                 ];
                 localStorage.setItem('wealthify_funds', JSON.stringify(MOCK_DATA['/funds/list']));
             }
 
-            if (storedTxns) {
+            if (storedTxns && !isOldData) {
                 MOCK_DATA['/transactions'] = JSON.parse(storedTxns);
             } else {
                 MOCK_DATA['/transactions'] = [
-                    { id: 1, investor_id: 1, fund_id: 3, transaction_date: "2025-05-27", amount: 20000.0, nav: 5952.38, units: 3.36, folio_no: "50100", location: "Mumbai", tax_status: "Individual" },
-                    { id: 2, investor_id: 2, fund_id: 1, transaction_date: "2025-05-27", amount: 16499.18, nav: 32.45, units: 508.44, folio_no: "50200", location: "Mumbai", tax_status: "Individual" },
-                    { id: 3, investor_id: 1, fund_id: 4, transaction_date: "2025-05-27", amount: 9999.5, nav: 167.72, units: 59.62, folio_no: "50300", location: "Mumbai", tax_status: "Individual" },
-                    { id: 4, investor_id: 2, fund_id: 2, transaction_date: "2025-05-27", amount: 8499.58, nav: 36.90, units: 230.33, folio_no: "50400", location: "Mumbai", tax_status: "Individual" }
+                    {"id": 1, "investor_id": 1, "fund_id": 1, "transaction_date": "2025-05-27", "amount": 6499.68, "nav": 24.86, "units": 261.49, "folio_no": "10074454/92", "location": "Andheri", "tax_status": "Individual"},
+                    {"id": 2, "investor_id": 2, "fund_id": 2, "transaction_date": "2025-05-27", "amount": 1491.93, "nav": 36.9, "units": 40.43, "folio_no": "16635601/85", "location": "Mumbai", "tax_status": "NRI - Non-Repatriable (NRO)"},
+                    {"id": 3, "investor_id": 3, "fund_id": 2, "transaction_date": "2025-05-27", "amount": 1999.9, "nav": 36.9, "units": 54.2, "folio_no": "16675812/23", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 4, "investor_id": 4, "fund_id": 2, "transaction_date": "2025-05-27", "amount": 999.95, "nav": 36.9, "units": 27.1, "folio_no": "15160625/67", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 5, "investor_id": 5, "fund_id": 2, "transaction_date": "2025-05-27", "amount": 999.95, "nav": 36.9, "units": 27.1, "folio_no": "16453558/07", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 6, "investor_id": 6, "fund_id": 2, "transaction_date": "2025-05-27", "amount": 8499.58, "nav": 36.9, "units": 230.33, "folio_no": "14728000/82", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 7, "investor_id": 7, "fund_id": 2, "transaction_date": "2025-05-27", "amount": 979.95, "nav": 36.9, "units": 26.56, "folio_no": "14901576/50", "location": "Mumbai", "tax_status": "NRI - Repatriable (NRE)"},
+                    {"id": 8, "investor_id": 8, "fund_id": 2, "transaction_date": "2025-05-27", "amount": 999.95, "nav": 36.9, "units": 27.1, "folio_no": "16639339/26", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 9, "investor_id": 1, "fund_id": 2, "transaction_date": "2025-05-27", "amount": 5499.73, "nav": 36.9, "units": 149.04, "folio_no": "16664403/09", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 10, "investor_id": 9, "fund_id": 2, "transaction_date": "2025-05-27", "amount": 1949.9, "nav": 36.9, "units": 52.84, "folio_no": "16560644/13", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 11, "investor_id": 10, "fund_id": 2, "transaction_date": "2025-05-27", "amount": 999.95, "nav": 36.9, "units": 27.1, "folio_no": "16586803/09", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 12, "investor_id": 11, "fund_id": 3, "transaction_date": "2025-05-27", "amount": 10000.0, "nav": 5942.08, "units": 1.68, "folio_no": "33964957", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 13, "investor_id": 11, "fund_id": 4, "transaction_date": "2025-05-27", "amount": 9999.5, "nav": 167.71, "units": 59.62, "folio_no": "33964957", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 14, "investor_id": 11, "fund_id": 3, "transaction_date": "2025-05-27", "amount": 10000.0, "nav": 5942.08, "units": 1.68, "folio_no": "33964957", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 15, "investor_id": 10, "fund_id": 5, "transaction_date": "2025-05-27", "amount": 2299.89, "nav": 32.45, "units": 70.87, "folio_no": "1001627799", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 16, "investor_id": 9, "fund_id": 5, "transaction_date": "2025-05-27", "amount": 5199.74, "nav": 32.45, "units": 160.24, "folio_no": "1001617374", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 17, "investor_id": 12, "fund_id": 5, "transaction_date": "2025-05-27", "amount": 2299.89, "nav": 32.45, "units": 70.87, "folio_no": "1000986016", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 18, "investor_id": 6, "fund_id": 5, "transaction_date": "2025-05-27", "amount": 16499.18, "nav": 32.45, "units": 508.44, "folio_no": "1001175551", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 19, "investor_id": 13, "fund_id": 5, "transaction_date": "2025-05-27", "amount": 2499.88, "nav": 32.45, "units": 77.04, "folio_no": "1001643579", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 20, "investor_id": 4, "fund_id": 5, "transaction_date": "2025-05-27", "amount": 2591.87, "nav": 32.45, "units": 79.87, "folio_no": "1001057193", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 21, "investor_id": 14, "fund_id": 5, "transaction_date": "2025-05-27", "amount": 999.95, "nav": 32.45, "units": 30.81, "folio_no": "1001148895", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 22, "investor_id": 15, "fund_id": 5, "transaction_date": "2025-05-27", "amount": 2299.89, "nav": 32.45, "units": 70.87, "folio_no": "1001529402", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 23, "investor_id": 7, "fund_id": 5, "transaction_date": "2025-05-27", "amount": 1812.91, "nav": 32.45, "units": 55.87, "folio_no": "1001041365", "location": "Mumbai", "tax_status": "Person of Indian Origin [PIO]"},
+                    {"id": 24, "investor_id": 5, "fund_id": 5, "transaction_date": "2025-05-27", "amount": 2999.85, "nav": 32.45, "units": 92.44, "folio_no": "1001567190", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 25, "investor_id": 1, "fund_id": 5, "transaction_date": "2025-05-27", "amount": 4399.78, "nav": 32.45, "units": 135.58, "folio_no": "1001641578", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 26, "investor_id": 8, "fund_id": 5, "transaction_date": "2025-05-27", "amount": 2999.85, "nav": 32.45, "units": 92.44, "folio_no": "1001636795", "location": "Mumbai", "tax_status": "Individual"},
+                    {"id": 27, "investor_id": 11, "fund_id": 6, "transaction_date": "2025-05-27", "amount": 1500.0, "nav": 27.54, "units": 54.46, "folio_no": "25944381/45", "location": "Andheri", "tax_status": "Individual"}
                 ];
                 localStorage.setItem('wealthify_transactions', JSON.stringify(MOCK_DATA['/transactions']));
             }
