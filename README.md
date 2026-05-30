@@ -120,14 +120,26 @@ The application separates concerns by distinguishing between **Read-Only Aggrega
 
 Below are screenshots of the key screens and views in Wealthify:
 
-### 1. Dashboard Overview & Charts
+### 1. Dashboard Overview (Top Analytics)
 Displays aggregated mutual fund metrics, capital weights, and allocations:
-![Dashboard Overview](screenshots/dashboard_doughnut.png)
+![Dashboard Overview Top](screenshots/dashboard_overview_top.png)
 
-### 2. Investment Distribution Chart
-Bar chart displaying total capital allocation sorted by fund in descending order:
-![Investment Allocation Bar Chart](screenshots/dashboard_barchart.png)
+### 2. Dashboard Overview (Performance Summary)
+Displays aggregated metrics per mutual fund scheme:
+![Dashboard Overview Bottom](screenshots/dashboard_overview_bottom.png)
 
-### 3. Swagger Interactive API docs
-Automatic OpenAPI documentation for developers to inspect backend route payloads and schema validation rules:
+### 3. Transactions Ledger
+Searchable, paginated registry of mutual fund transactions:
+![Transactions Ledger](screenshots/transactions_ledger.png)
+
+### 4. Transaction CRUD Management Form
+Glassmorphic modal dialog form for adding or editing transaction records:
+![Transaction Form](screenshots/edit_transaction_modal.png)
+
+### 5. All Investors Registry
+Registry of investors with total net-worth aggregates:
+![Investors Registry](screenshots/investors_registry.png)
+
+### 6. Swagger API Documentation
+FastAPI automatic interactive OpenAPI route and schema documentation:
 ![Swagger API Documentation](screenshots/swagger_docs.png)
