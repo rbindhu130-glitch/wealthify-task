@@ -145,5 +145,6 @@ Aggregated mutual fund metrics, portfolio weight chart, and capital allocations:
   ![Edit Fund Form](screenshots/edit_fund_modal.png)
 
 ### 4. Swagger API Documentation
-FastAPI automatic interactive OpenAPI route and schema documentation:
-![Swagger API Documentation](screenshots/swagger_docs.png)
+FastAPI automatic interactive OpenAPI documentation showing all REST routes (GET, POST, PUT, DELETE) for Investors, Funds, Transactions, and Summary endpoints:
+![Swagger API Docs — Top (Investor & Fund Routes)](screenshots/swagger_docs_top.png)
+![Swagger API Docs — Bottom (Fund & Transaction CRUD Routes)](screenshots/swagger_docs_bottom.png)
