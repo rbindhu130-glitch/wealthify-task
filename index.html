@@ -63,6 +63,14 @@
                 </a>
             </nav>
 
+            <div class="sidebar-section-label">DATA MANAGEMENT</div>
+            <nav class="nav-menu" role="navigation" aria-label="Management navigation">
+                <a href="#" class="nav-item" data-view="data-management" id="nav-data-management">
+                    <span class="nav-icon"><i class="fa-solid fa-database"></i></span>
+                    <span class="nav-label">Data Management</span>
+                    <span class="nav-indicator"></span>
+                </a>
+            </nav>
 
         </aside>
 
@@ -442,10 +450,161 @@
                     </div>
                 </section>
 
+                <!-- ══════════════════════════════════ DATA MANAGEMENT (CRUD) ══════════════════════════════════ -->
+                <section id="data-management" class="view" aria-label="Data Management">
+                    <div class="page-header">
+                        <div class="page-title">
+                            <h1>Data Management</h1>
+                            <p class="page-subtitle">Add, edit, or delete Investors, Funds, and Transactions</p>
+                        </div>
+                    </div>
+
+                    <!-- Tabs Header -->
+                    <div class="crud-tabs">
+                        <button class="crud-tab active" data-tab="crud-transactions">
+                            <i class="fa-solid fa-receipt"></i> Transactions
+                        </button>
+                        <button class="crud-tab" data-tab="crud-investors">
+                            <i class="fa-solid fa-users"></i> Investors
+                        </button>
+                        <button class="crud-tab" data-tab="crud-funds">
+                            <i class="fa-solid fa-building-columns"></i> Funds
+                        </button>
+                    </div>
+
+                    <!-- Tab Contents -->
+                    <div class="crud-content-wrapper">
+                        
+                        <!-- ─── A. TRANSACTIONS TAB ─── -->
+                        <div id="crud-transactions" class="crud-tab-panel active">
+                            <div class="crud-panel-header">
+                                <div class="search-group">
+                                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                                    <input type="text" id="crud-txn-search" class="search-input" placeholder="Search transactions...">
+                                </div>
+                                <button class="btn btn-primary" id="btn-add-txn">
+                                    <i class="fa-solid fa-plus"></i> Add Transaction
+                                </button>
+                            </div>
+                            <div class="card table-card">
+                                <div class="table-responsive">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Investor</th>
+                                                <th>Mutual Fund</th>
+                                                <th>Date</th>
+                                                <th class="text-right">Amount</th>
+                                                <th class="text-right">NAV</th>
+                                                <th class="text-right">Units</th>
+                                                <th class="text-center">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="crud-txn-tbody">
+                                            <!-- Dynamic rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="pagination-footer" id="crud-txn-pagination">
+                                    <!-- Dynamic pagination -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ─── B. INVESTORS TAB ─── -->
+                        <div id="crud-investors" class="crud-tab-panel">
+                            <div class="crud-panel-header">
+                                <div class="search-group">
+                                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                                    <input type="text" id="crud-inv-search" class="search-input" placeholder="Search investors...">
+                                </div>
+                                <button class="btn btn-primary" id="btn-add-inv">
+                                    <i class="fa-solid fa-plus"></i> Add Investor
+                                </button>
+                            </div>
+                            <div class="card table-card">
+                                <div class="table-responsive">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Name</th>
+                                                <th>PAN Number</th>
+                                                <th class="text-center">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="crud-inv-tbody">
+                                            <!-- Dynamic rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="pagination-footer" id="crud-inv-pagination">
+                                    <!-- Dynamic pagination -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ─── C. FUNDS TAB ─── -->
+                        <div id="crud-funds" class="crud-tab-panel">
+                            <div class="crud-panel-header">
+                                <div class="search-group">
+                                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                                    <input type="text" id="crud-fund-search" class="search-input" placeholder="Search funds...">
+                                </div>
+                                <button class="btn btn-primary" id="btn-add-fund">
+                                    <i class="fa-solid fa-plus"></i> Add Fund
+                                </button>
+                            </div>
+                            <div class="card table-card">
+                                <div class="table-responsive">
+                                    <table class="data-table">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Fund Name</th>
+                                                <th>AMC Code</th>
+                                                <th>Scheme Type</th>
+                                                <th class="text-center">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="crud-fund-tbody">
+                                            <!-- Dynamic rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="pagination-footer" id="crud-fund-pagination">
+                                    <!-- Dynamic pagination -->
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
             </div><!-- /views-container -->
         </main><!-- /main-content -->
     </div><!-- /app-wrapper -->
 
-    <script src="app.js?v=4"></script>
+    <!-- ══════════════════════════════════ CRUD MODAL ══════════════════════════════════ -->
+    <div class="crud-modal-overlay" id="crud-modal-overlay">
+        <div class="crud-modal">
+            <div class="crud-modal-header">
+                <h3 id="crud-modal-title">Add Investor</h3>
+                <button class="crud-modal-close" id="crud-modal-close" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="crud-modal-body">
+                <form id="crud-form">
+                    <!-- Fields are generated dynamically by javascript -->
+                </form>
+            </div>
+            <div class="crud-modal-footer">
+                <button class="btn btn-ghost" id="btn-modal-cancel">Cancel</button>
+                <button class="btn btn-primary" id="btn-modal-save">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=5"></script>
 </body>
 </html>

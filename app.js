@@ -88,6 +88,23 @@ class WealthifyApp {
         };
         this.pageSize = 15;
 
+        // CRUD state variables
+        this.crudPages = {
+            transactions: 1,
+            investors: 1,
+            funds: 1
+        };
+        this.crudPageSize = 10;
+        this.crudSearch = {
+            transactions: '',
+            investors: '',
+            funds: ''
+        };
+        this.currentCrudTab = 'crud-transactions';
+        this.currentCrudEntity = null;
+        this.currentCrudAction = null;
+        this.currentCrudItemId = null;
+
         // Cached data for client-side sort on dashboard table
         this.dashboardData = [];
         this.dashboardSort = { col: null, dir: 'asc' };
@@ -114,6 +131,7 @@ class WealthifyApp {
         this.setupSortableHeaders();
         this.setHeaderDate();
         this.checkApiHealth();
+        this.setupCrud();
         this.loadDashboard();
     }
 
@@ -183,6 +201,7 @@ class WealthifyApp {
             'investor-summary': 'Investor Summary',
             'fund-summary': 'Fund Summary',
             'investors': 'All Investors',
+            'data-management': 'Data Management',
         };
         if (bc) bc.textContent = labels[viewId] || viewId;
 
@@ -191,6 +210,7 @@ class WealthifyApp {
         if (viewId === 'investor-summary') this.loadInvestorSummary();
         if (viewId === 'fund-summary') this.loadFundSummary();
         if (viewId === 'investors') this.loadInvestorsList();
+        if (viewId === 'data-management') this.loadDataManagement();
     }
 
     // ═════════════════════════════════════════════════════════════
@@ -829,6 +849,752 @@ class WealthifyApp {
     truncateLabel(text, max = 25) {
         if (!text) return '';
         return text.length > max ? text.substring(0, max) + '…' : text;
+    }
+
+    // ═════════════════════════════════════════════════════════════
+    // CRUD EVENT LISTENERS & LOGIC
+    // ═════════════════════════════════════════════════════════════
+    setupCrud() {
+        // Tab switching logic
+        const tabs = document.querySelectorAll('.crud-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                const tabId = tab.getAttribute('data-tab');
+                this.currentCrudTab = tabId;
+                document.querySelectorAll('.crud-tab-panel').forEach(panel => {
+                    panel.classList.remove('active');
+                });
+                document.getElementById(tabId).classList.add('active');
+                this.loadCrudTab(tabId);
+            });
+        });
+
+        // Search inputs
+        document.getElementById('crud-txn-search')?.addEventListener('input', (e) => {
+            this.crudSearch.transactions = e.target.value;
+            this.crudPages.transactions = 1;
+            this.loadCrudTransactions();
+        });
+        document.getElementById('crud-inv-search')?.addEventListener('input', (e) => {
+            this.crudSearch.investors = e.target.value;
+            this.crudPages.investors = 1;
+            this.loadCrudInvestors();
+        });
+        document.getElementById('crud-fund-search')?.addEventListener('input', (e) => {
+            this.crudSearch.funds = e.target.value;
+            this.crudPages.funds = 1;
+            this.loadCrudFunds();
+        });
+
+        // Add Buttons
+        document.getElementById('btn-add-txn')?.addEventListener('click', () => this.openCrudModal('transaction', 'add'));
+        document.getElementById('btn-add-inv')?.addEventListener('click', () => this.openCrudModal('investor', 'add'));
+        document.getElementById('btn-add-fund')?.addEventListener('click', () => this.openCrudModal('fund', 'add'));
+
+        // Modal close / cancel
+        document.getElementById('crud-modal-close')?.addEventListener('click', () => this.closeCrudModal());
+        document.getElementById('btn-modal-cancel')?.addEventListener('click', () => this.closeCrudModal());
+        document.getElementById('btn-modal-save')?.addEventListener('click', () => this.submitCrudForm());
+    }
+
+    loadCrudTab(tabId) {
+        if (tabId === 'crud-transactions') this.loadCrudTransactions();
+        if (tabId === 'crud-investors') this.loadCrudInvestors();
+        if (tabId === 'crud-funds') this.loadCrudFunds();
+    }
+
+    loadDataManagement() {
+        this.loadCrudTab(this.currentCrudTab);
+    }
+
+    // ── CRUD Request Wrapper with Offline Simulation ──
+    async requestAPI(endpoint, method = 'GET', body = null, params = {}) {
+        try {
+            const url = new URL(`${API_BASE}${endpoint}`, window.location.origin);
+            Object.entries(params).forEach(([key, val]) => {
+                if (val !== undefined && val !== null && val !== '') {
+                    url.searchParams.append(key, val);
+                }
+            });
+
+            const options = {
+                method,
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            };
+            if (body && (method === 'POST' || method === 'PUT')) {
+                options.body = JSON.stringify(body);
+            }
+
+            const res = await fetch(url, options);
+            if (!res.ok) {
+                const errText = await res.text().catch(() => "");
+                throw new Error(`HTTP ${res.status}: ${res.statusText || errText}`);
+            }
+            
+            if (method !== 'DELETE') {
+                return await res.json();
+            } else {
+                return { success: true };
+            }
+        } catch (err) {
+            console.error(`API ${method} Error [${endpoint}]. Falling back to mock CRUD:`, err);
+            
+            // Offline mock CRUD fallback
+            return this.handleMockCRUD(endpoint, method, body, params);
+        }
+    }
+
+    // ── Offline Mock CRUD Handler ──
+    handleMockCRUD(endpoint, method, body, params) {
+        if (!MOCK_DATA['/investors/list']) {
+            MOCK_DATA['/investors/list'] = [
+                { id: 1, name: "M Padmapriya", pan_number: "ANIPP0516B" },
+                { id: 2, name: "K Shyma", pan_number: "ABCPS7064H" },
+                { id: 3, name: "Meethala Pullutummal Narayani", pan_number: "AAEPN3766A" },
+                { id: 4, name: "Avinash Wadhwani", pan_number: "ABAPW8282F" },
+                { id: 5, name: "Manikandan N Nepolian", pan_number: "BHXPM3600B" },
+                { id: 6, name: "S Vinoth Kumar", pan_number: "AFYPV6441F" },
+                { id: 7, name: "Nivedhitha Rajagopal", pan_number: "AVNPN8269J" },
+                { id: 8, name: "R Sethupathy", pan_number: "FPHPS1056H" },
+                { id: 9, name: "Srijesh", pan_number: "EFBPS7950P" },
+                { id: 10, name: "Sheethal Balaji", pan_number: "DCSPS9502J" }
+            ];
+        }
+        if (!MOCK_DATA['/funds/list']) {
+            MOCK_DATA['/funds/list'] = [
+                { id: 1, name: "Mahindra Manulife Mid Cap Fund - Regular - Growth", amc_code: "MM", scheme_type: "Equity" },
+                { id: 2, name: "Kotak Gold Fund - Growth (Regular Plan)", amc_code: "K", scheme_type: "Gold" },
+                { id: 3, name: "SBI Magnum Ultra Short Duration Fund Regular Growth", amc_code: "SBI", scheme_type: "Debt" },
+                { id: 4, name: "SBI Small Cap Fund Regular Growth", amc_code: "SBI", scheme_type: "Equity" },
+                { id: 5, name: "DSP Nifty 50 Equal Weight Index Fund - Reg - Growth", amc_code: "DSP", scheme_type: "Equity" },
+                { id: 6, name: "ICICI Prudential Ultra Short Term Fund - Growth", amc_code: "ICICI", scheme_type: "Debt" }
+            ];
+        }
+        if (!MOCK_DATA['/transactions']) {
+            MOCK_DATA['/transactions'] = [
+                { id: 1, investor_id: 1, fund_id: 3, transaction_date: "2025-05-27", amount: 20000.0, nav: 5952.38, units: 3.36, folio_no: "50100", location: "Mumbai", tax_status: "Individual" },
+                { id: 2, investor_id: 2, fund_id: 1, transaction_date: "2025-05-27", amount: 16499.18, nav: 32.45, units: 508.44, folio_no: "50200", location: "Mumbai", tax_status: "Individual" },
+                { id: 3, investor_id: 1, fund_id: 4, transaction_date: "2025-05-27", amount: 9999.5, nav: 167.72, units: 59.62, folio_no: "50300", location: "Mumbai", tax_status: "Individual" },
+                { id: 4, investor_id: 2, fund_id: 2, transaction_date: "2025-05-27", amount: 8499.58, nav: 36.90, units: 230.33, folio_no: "50400", location: "Mumbai", tax_status: "Individual" }
+            ];
+        }
+
+        const isListRequest = method === 'GET';
+        const parts = endpoint.split('/');
+        const hasId = parts.length > 2 && !isNaN(parseInt(parts[parts.length - 1]));
+        const entityId = hasId ? parseInt(parts[parts.length - 1]) : null;
+        const baseEndpoint = hasId ? '/' + parts.slice(1, parts.length - 1).join('/') : endpoint;
+
+        // GET
+        if (isListRequest) {
+            let data = MOCK_DATA[baseEndpoint] || [];
+            if (hasId) {
+                return data.find(item => item.id === entityId) || null;
+            }
+            
+            if (params.search) {
+                const q = params.search.toLowerCase();
+                if (baseEndpoint === '/investors/list') {
+                    data = data.filter(i => i.name.toLowerCase().includes(q) || i.pan_number.toLowerCase().includes(q));
+                } else if (baseEndpoint === '/funds/list') {
+                    data = data.filter(f => f.name.toLowerCase().includes(q) || (f.amc_code && f.amc_code.toLowerCase().includes(q)));
+                } else if (baseEndpoint === '/transactions') {
+                    data = data.filter(t => {
+                        const inv = MOCK_DATA['/investors/list'].find(i => i.id === t.investor_id);
+                        const fnd = MOCK_DATA['/funds/list'].find(f => f.id === t.fund_id);
+                        return (inv && inv.name.toLowerCase().includes(q)) || (fnd && fnd.name.toLowerCase().includes(q));
+                    });
+                }
+            }
+
+            const page = parseInt(params.page) || 1;
+            const limit = parseInt(params.limit) || 10;
+            const start = (page - 1) * limit;
+            return data.slice(start, start + limit);
+        }
+
+        // POST
+        if (method === 'POST') {
+            const data = MOCK_DATA[baseEndpoint] || [];
+            const nextId = data.length > 0 ? Math.max(...data.map(i => i.id)) + 1 : 1;
+            const newObj = { id: nextId, ...body };
+            data.push(newObj);
+            MOCK_DATA[baseEndpoint] = data;
+            
+            this.recalculateMockAggregates();
+            return newObj;
+        }
+
+        // PUT
+        if (method === 'PUT') {
+            const data = MOCK_DATA[baseEndpoint] || [];
+            const index = data.findIndex(item => item.id === entityId);
+            if (index !== -1) {
+                data[index] = { ...data[index], ...body };
+                MOCK_DATA[baseEndpoint] = data;
+                this.recalculateMockAggregates();
+                return data[index];
+            }
+            throw new Error(`Item ${entityId} not found`);
+        }
+
+        // DELETE
+        if (method === 'DELETE') {
+            const data = MOCK_DATA[baseEndpoint] || [];
+            const index = data.findIndex(item => item.id === entityId);
+            if (index !== -1) {
+                data.splice(index, 1);
+                MOCK_DATA[baseEndpoint] = data;
+
+                if (baseEndpoint === '/investors/list') {
+                    MOCK_DATA['/transactions'] = MOCK_DATA['/transactions'].filter(t => t.investor_id !== entityId);
+                } else if (baseEndpoint === '/funds/list') {
+                    MOCK_DATA['/transactions'] = MOCK_DATA['/transactions'].filter(t => t.fund_id !== entityId);
+                }
+                
+                this.recalculateMockAggregates();
+                return { success: true };
+            }
+            throw new Error(`Item ${entityId} not found`);
+        }
+    }
+
+    recalculateMockAggregates() {
+        const txns = MOCK_DATA['/transactions'] || [];
+        const investorsList = MOCK_DATA['/investors/list'] || [];
+        const fundsList = MOCK_DATA['/funds/list'] || [];
+
+        const invSumMap = {};
+        txns.forEach(t => {
+            const inv = investorsList.find(i => i.id === t.investor_id);
+            const fnd = fundsList.find(f => f.id === t.fund_id);
+            if (inv && fnd) {
+                const key = `${inv.name}|||${fnd.name}`;
+                if (!invSumMap[key]) {
+                    invSumMap[key] = { investor_name: inv.name, mutual_fund: fnd.name, total_amount: 0, total_units: 0 };
+                }
+                invSumMap[key].total_amount += t.amount;
+                invSumMap[key].total_units += t.units;
+            }
+        });
+        MOCK_DATA['/investor-summary'] = Object.values(invSumMap);
+
+        const fundSumMap = {};
+        txns.forEach(t => {
+            const inv = investorsList.find(i => i.id === t.investor_id);
+            const fnd = fundsList.find(f => f.id === t.fund_id);
+            if (inv && fnd) {
+                const key = `${fnd.name}|||${inv.name}`;
+                if (!fundSumMap[key]) {
+                    fundSumMap[key] = { mutual_fund: fnd.name, investor_name: inv.name, amount: 0, units: 0 };
+                }
+                fundSumMap[key].amount += t.amount;
+                fundSumMap[key].units += t.units;
+            }
+        });
+        MOCK_DATA['/fund-summary'] = Object.values(fundSumMap);
+
+        const invMap = {};
+        txns.forEach(t => {
+            const inv = investorsList.find(i => i.id === t.investor_id);
+            if (inv) {
+                if (!invMap[inv.name]) {
+                    invMap[inv.name] = { investor_name: inv.name, pan_number: inv.pan_number, total_investment: 0 };
+                }
+                invMap[inv.name].total_investment += t.amount;
+            }
+        });
+        investorsList.forEach(inv => {
+            if (!invMap[inv.name]) {
+                invMap[inv.name] = { investor_name: inv.name, pan_number: inv.pan_number, total_investment: 0 };
+            }
+        });
+        MOCK_DATA['/investors'] = Object.values(invMap);
+
+        const fndMap = {};
+        txns.forEach(t => {
+            const fnd = fundsList.find(f => f.id === t.fund_id);
+            if (fnd) {
+                if (!fndMap[fnd.name]) {
+                    fndMap[fnd.name] = { mutual_fund: fnd.name, total_amount: 0, total_units: 0, average_nav: 0 };
+                }
+                fndMap[fnd.name].total_amount += t.amount;
+                fndMap[fnd.name].total_units += t.units;
+            }
+        });
+        fundsList.forEach(fnd => {
+            if (!fndMap[fnd.name]) {
+                fndMap[fnd.name] = { mutual_fund: fnd.name, total_amount: 0, total_units: 0, average_nav: 0 };
+            }
+        });
+        Object.values(fndMap).forEach(f => {
+            f.average_nav = f.total_units > 0 ? (f.total_amount / f.total_units) : 0;
+        });
+        MOCK_DATA['/mutualfund-overall'] = Object.values(fndMap);
+    }
+
+    // ── CRUD View Fetch & Renderers ──
+    async loadCrudTransactions() {
+        const tbody = document.getElementById('crud-txn-tbody');
+        if (!tbody) return;
+
+        tbody.innerHTML = `
+            <tr class="skeleton-row"><td colspan="8"><div class="skeleton-line"></div></td></tr>
+            <tr class="skeleton-row"><td colspan="8"><div class="skeleton-line"></div></td></tr>
+        `;
+
+        try {
+            const limit = this.crudPageSize;
+            const page = this.crudPages.transactions;
+            const txns = await this.requestAPI('/transactions', 'GET', null, {
+                search: this.crudSearch.transactions,
+                page,
+                limit
+            }) || [];
+
+            const nextTxns = await this.requestAPI('/transactions', 'GET', null, {
+                search: this.crudSearch.transactions,
+                page: page + 1,
+                limit
+            }) || [];
+            const hasNext = nextTxns.length > 0;
+            const totalPages = hasNext ? page + 1 : page;
+
+            const allInv = await this.requestAPI('/investors/list', 'GET', null, { limit: 100 }) || [];
+            const allFunds = await this.requestAPI('/funds/list', 'GET', null, { limit: 100 }) || [];
+
+            const invMap = {};
+            allInv.forEach(i => invMap[i.id] = i.name);
+            const fundMap = {};
+            allFunds.forEach(f => fundMap[f.id] = f.name);
+
+            if (txns.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" class="table-empty"><i class="fa-solid fa-inbox"></i><p>No transactions found.</p></td></tr>`;
+                this.renderPagination('crud-txn-pagination', page, 1, () => {});
+                return;
+            }
+
+            tbody.innerHTML = txns.map(t => {
+                const invName = invMap[t.investor_id] || `Investor #${t.investor_id}`;
+                const fundName = fundMap[t.fund_id] || `Fund #${t.fund_id}`;
+                return `
+                    <tr>
+                        <td><span class="row-index">${t.id}</span></td>
+                        <td><strong>${this.escapeHtml(invName)}</strong></td>
+                        <td><span class="fund-tag">${this.escapeHtml(fundName)}</span></td>
+                        <td>${t.transaction_date}</td>
+                        <td class="text-right amount-text">${this.formatCurrency(t.amount)}</td>
+                        <td class="text-right">${this.formatNumber(t.nav)}</td>
+                        <td class="text-right">${this.formatNumber(t.units)}</td>
+                        <td>
+                            <div class="action-btn-group">
+                                <button class="action-btn action-btn-edit" onclick="app.editCrudItem('transaction', ${t.id})" aria-label="Edit transaction">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button class="action-btn action-btn-delete" onclick="app.deleteCrudItem('transaction', ${t.id})" aria-label="Delete transaction">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            this.renderPagination('crud-txn-pagination', page, totalPages, (targetPage) => {
+                this.crudPages.transactions = targetPage;
+                this.loadCrudTransactions();
+            });
+
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="8" class="table-empty">Error loading transactions: ${e.message}</td></tr>`;
+        }
+    }
+
+    async loadCrudInvestors() {
+        const tbody = document.getElementById('crud-inv-tbody');
+        if (!tbody) return;
+
+        tbody.innerHTML = `
+            <tr class="skeleton-row"><td colspan="4"><div class="skeleton-line"></div></td></tr>
+            <tr class="skeleton-row"><td colspan="4"><div class="skeleton-line"></div></td></tr>
+        `;
+
+        try {
+            const limit = this.crudPageSize;
+            const page = this.crudPages.investors;
+            const investors = await this.requestAPI('/investors/list', 'GET', null, {
+                search: this.crudSearch.investors,
+                page,
+                limit
+            }) || [];
+
+            const nextInv = await this.requestAPI('/investors/list', 'GET', null, {
+                search: this.crudSearch.investors,
+                page: page + 1,
+                limit
+            }) || [];
+            const hasNext = nextInv.length > 0;
+            const totalPages = hasNext ? page + 1 : page;
+
+            if (investors.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="table-empty"><i class="fa-solid fa-inbox"></i><p>No investors found.</p></td></tr>`;
+                this.renderPagination('crud-inv-pagination', page, 1, () => {});
+                return;
+            }
+
+            tbody.innerHTML = investors.map(i => `
+                <tr>
+                    <td><span class="row-index">${i.id}</span></td>
+                    <td><strong>${this.escapeHtml(i.name)}</strong></td>
+                    <td><code>${this.escapeHtml(i.pan_number)}</code></td>
+                    <td>
+                        <div class="action-btn-group">
+                            <button class="action-btn action-btn-edit" onclick="app.editCrudItem('investor', ${i.id})" aria-label="Edit investor">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button class="action-btn action-btn-delete" onclick="app.deleteCrudItem('investor', ${i.id})" aria-label="Delete investor">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            this.renderPagination('crud-inv-pagination', page, totalPages, (targetPage) => {
+                this.crudPages.investors = targetPage;
+                this.loadCrudInvestors();
+            });
+
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="4" class="table-empty">Error loading investors: ${e.message}</td></tr>`;
+        }
+    }
+
+    async loadCrudFunds() {
+        const tbody = document.getElementById('crud-fund-tbody');
+        if (!tbody) return;
+
+        tbody.innerHTML = `
+            <tr class="skeleton-row"><td colspan="5"><div class="skeleton-line"></div></td></tr>
+            <tr class="skeleton-row"><td colspan="5"><div class="skeleton-line"></div></td></tr>
+        `;
+
+        try {
+            const limit = this.crudPageSize;
+            const page = this.crudPages.funds;
+            const funds = await this.requestAPI('/funds/list', 'GET', null, {
+                search: this.crudSearch.funds,
+                page,
+                limit
+            }) || [];
+
+            const nextFunds = await this.requestAPI('/funds/list', 'GET', null, {
+                search: this.crudSearch.funds,
+                page: page + 1,
+                limit
+            }) || [];
+            const hasNext = nextFunds.length > 0;
+            const totalPages = hasNext ? page + 1 : page;
+
+            if (funds.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="table-empty"><i class="fa-solid fa-inbox"></i><p>No funds found.</p></td></tr>`;
+                this.renderPagination('crud-fund-pagination', page, 1, () => {});
+                return;
+            }
+
+            tbody.innerHTML = funds.map(f => `
+                <tr>
+                    <td><span class="row-index">${f.id}</span></td>
+                    <td><strong>${this.escapeHtml(f.name)}</strong></td>
+                    <td><span class="fund-tag">${this.escapeHtml(f.amc_code || 'N/A')}</span></td>
+                    <td>${this.escapeHtml(f.scheme_type || 'N/A')}</td>
+                    <td>
+                        <div class="action-btn-group">
+                            <button class="action-btn action-btn-edit" onclick="app.editCrudItem('fund', ${f.id})" aria-label="Edit fund">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button class="action-btn action-btn-delete" onclick="app.deleteCrudItem('fund', ${f.id})" aria-label="Delete fund">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+            this.renderPagination('crud-fund-pagination', page, totalPages, (targetPage) => {
+                this.crudPages.funds = targetPage;
+                this.loadCrudFunds();
+            });
+
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="5" class="table-empty">Error loading funds: ${e.message}</td></tr>`;
+        }
+    }
+
+    renderPagination(containerId, currentPage, totalPages, onPageChange) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        if (totalPages <= 1) {
+            container.innerHTML = '';
+            container.style.display = 'none';
+            return;
+        }
+        container.style.display = 'flex';
+
+        let btnGroupHtml = '';
+        for (let i = 1; i <= totalPages; i++) {
+            btnGroupHtml += `
+                <button class="pagination-btn ${i === currentPage ? 'active' : ''}" data-page="${i}">
+                    ${i}
+                </button>
+            `;
+        }
+
+        container.innerHTML = `
+            <span>Page ${currentPage} of ${totalPages}</span>
+            <div class="pagination-btn-group">
+                <button class="pagination-btn" id="${containerId}-prev" ${currentPage === 1 ? 'disabled' : ''}>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                ${btnGroupHtml}
+                <button class="pagination-btn" id="${containerId}-next" ${currentPage === totalPages ? 'disabled' : ''}>
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        `;
+
+        container.querySelectorAll('.pagination-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetBtn = e.currentTarget;
+                if (targetBtn.disabled) return;
+                
+                let targetPage = currentPage;
+                const pageAttr = targetBtn.getAttribute('data-page');
+                if (pageAttr) {
+                    targetPage = parseInt(pageAttr);
+                } else if (targetBtn.id.includes('-prev')) {
+                    targetPage = currentPage - 1;
+                } else if (targetBtn.id.includes('-next')) {
+                    targetPage = currentPage + 1;
+                }
+                
+                onPageChange(targetPage);
+            });
+        });
+    }
+
+    // ── Form Modal Dialog Controllers ──
+    async openCrudModal(entity, action, itemId = null) {
+        this.currentCrudEntity = entity;
+        this.currentCrudAction = action;
+        this.currentCrudItemId = itemId;
+
+        const titleEl = document.getElementById('crud-modal-title');
+        const formEl = document.getElementById('crud-form');
+        const overlay = document.getElementById('crud-modal-overlay');
+
+        if (!titleEl || !formEl || !overlay) return;
+
+        titleEl.textContent = `${action === 'add' ? 'Add' : 'Edit'} ${entity.charAt(0).toUpperCase() + entity.slice(1)}`;
+        formEl.innerHTML = '<p class="text-muted">Loading form...</p>';
+        overlay.classList.add('active');
+
+        try {
+            let fieldsHtml = '';
+            let itemData = null;
+
+            if (action === 'edit' && itemId) {
+                const endpoint = entity === 'transaction' ? `/transactions/${itemId}` : (entity === 'investor' ? `/investors/${itemId}` : `/funds/${itemId}`);
+                itemData = await this.requestAPI(endpoint, 'GET');
+            }
+
+            if (entity === 'investor') {
+                fieldsHtml = `
+                    <div class="form-group">
+                        <label class="form-label" for="inv-name-field">Investor Name</label>
+                        <input type="text" id="inv-name-field" class="form-input" required value="${itemData ? this.escapeHtml(itemData.name) : ''}" placeholder="Enter full name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="inv-pan-field">PAN Number</label>
+                        <input type="text" id="inv-pan-field" class="form-input" required value="${itemData ? this.escapeHtml(itemData.pan_number) : ''}" placeholder="Enter 10-digit PAN">
+                    </div>
+                `;
+            } else if (entity === 'fund') {
+                fieldsHtml = `
+                    <div class="form-group">
+                        <label class="form-label" for="fund-name-field">Mutual Fund Name</label>
+                        <input type="text" id="fund-name-field" class="form-input" required value="${itemData ? this.escapeHtml(itemData.name) : ''}" placeholder="Enter scheme name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="fund-amc-field">AMC Code</label>
+                        <input type="text" id="fund-amc-field" class="form-input" value="${itemData && itemData.amc_code ? this.escapeHtml(itemData.amc_code) : ''}" placeholder="e.g. AXIS, KOTAK">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="fund-type-field">Scheme Type</label>
+                        <input type="text" id="fund-type-field" class="form-input" value="${itemData && itemData.scheme_type ? this.escapeHtml(itemData.scheme_type) : ''}" placeholder="e.g. Equity, Debt, Gold">
+                    </div>
+                `;
+            } else if (entity === 'transaction') {
+                const allInv = await this.requestAPI('/investors/list', 'GET', null, { limit: 100 }) || [];
+                const allFunds = await this.requestAPI('/funds/list', 'GET', null, { limit: 100 }) || [];
+
+                const investorOptions = allInv.map(i => `
+                    <option value="${i.id}" ${itemData && itemData.investor_id === i.id ? 'selected' : ''}>
+                        ${this.escapeHtml(i.name)} (${i.pan_number})
+                    </option>
+                `).join('');
+
+                const fundOptions = allFunds.map(f => `
+                    <option value="${f.id}" ${itemData && itemData.fund_id === f.id ? 'selected' : ''}>
+                        ${this.escapeHtml(f.name)}
+                    </option>
+                `).join('');
+
+                fieldsHtml = `
+                    <div class="form-group">
+                        <label class="form-label" for="txn-investor-field">Investor</label>
+                        <select id="txn-investor-field" class="form-select" required>
+                            <option value="">-- Select Investor --</option>
+                            ${investorOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="txn-fund-field">Mutual Fund</label>
+                        <select id="txn-fund-field" class="form-select" required>
+                            <option value="">-- Select Mutual Fund --</option>
+                            ${fundOptions}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="txn-date-field">Transaction Date</label>
+                        <input type="date" id="txn-date-field" class="form-input" required value="${itemData ? itemData.transaction_date : new Date().toISOString().split('T')[0]}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="txn-amount-field">Amount (₹)</label>
+                        <input type="number" step="0.01" id="txn-amount-field" class="form-input" required value="${itemData ? itemData.amount : ''}" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="txn-nav-field">NAV (₹)</label>
+                        <input type="number" step="0.0001" id="txn-nav-field" class="form-input" required value="${itemData ? itemData.nav : ''}" placeholder="0.0000">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="txn-units-field">Units</label>
+                        <input type="number" step="0.0001" id="txn-units-field" class="form-input" required value="${itemData ? itemData.units : ''}" placeholder="0.0000">
+                    </div>
+                `;
+            }
+
+            formEl.innerHTML = fieldsHtml;
+
+            if (entity === 'transaction') {
+                const amt = document.getElementById('txn-amount-field');
+                const nav = document.getElementById('txn-nav-field');
+                const units = document.getElementById('txn-units-field');
+                
+                const recalc = () => {
+                    const a = parseFloat(amt.value) || 0;
+                    const n = parseFloat(nav.value) || 0;
+                    if (n > 0) {
+                        units.value = (a / n).toFixed(4);
+                    }
+                };
+                
+                amt?.addEventListener('input', recalc);
+                nav?.addEventListener('input', recalc);
+            }
+
+        } catch (e) {
+            formEl.innerHTML = `<p class="text-danger">Failed to load form: ${e.message}</p>`;
+        }
+    }
+
+    async submitCrudForm() {
+        const entity = this.currentCrudEntity;
+        const action = this.currentCrudAction;
+        const itemId = this.currentCrudItemId;
+
+        const form = document.getElementById('crud-form');
+        if (!form) return;
+
+        const inputs = form.querySelectorAll('[required]');
+        for (let input of inputs) {
+            if (!input.value.trim()) {
+                this.showToast(`Please fill out all required fields`, 'error');
+                input.focus();
+                return;
+            }
+        }
+
+        let body = {};
+        let endpoint = '';
+
+        if (entity === 'investor') {
+            body = {
+                name: document.getElementById('inv-name-field').value.trim(),
+                pan_number: document.getElementById('inv-pan-field').value.trim()
+            };
+            endpoint = action === 'add' ? '/investors' : `/investors/${itemId}`;
+        } else if (entity === 'fund') {
+            body = {
+                name: document.getElementById('fund-name-field').value.trim(),
+                amc_code: document.getElementById('fund-amc-field').value.trim() || null,
+                scheme_type: document.getElementById('fund-type-field').value.trim() || null
+            };
+            endpoint = action === 'add' ? '/funds' : `/funds/${itemId}`;
+        } else if (entity === 'transaction') {
+            body = {
+                investor_id: parseInt(document.getElementById('txn-investor-field').value),
+                fund_id: parseInt(document.getElementById('txn-fund-field').value),
+                transaction_date: document.getElementById('txn-date-field').value,
+                amount: parseFloat(document.getElementById('txn-amount-field').value),
+                nav: parseFloat(document.getElementById('txn-nav-field').value),
+                units: parseFloat(document.getElementById('txn-units-field').value)
+            };
+            endpoint = action === 'add' ? '/transactions' : `/transactions/${itemId}`;
+        }
+
+        const method = action === 'add' ? 'POST' : 'PUT';
+
+        try {
+            await this.requestAPI(endpoint, method, body);
+            this.showToast(`${entity.charAt(0).toUpperCase() + entity.slice(1)} ${action === 'add' ? 'created' : 'updated'} successfully!`, 'success');
+            this.closeCrudModal();
+            this.loadCrudTab(this.currentCrudTab);
+            this.loadDashboard();
+        } catch (e) {
+            this.showToast(`Operation failed: ${e.message}`, 'error');
+        }
+    }
+
+    closeCrudModal() {
+        const overlay = document.getElementById('crud-modal-overlay');
+        if (overlay) overlay.classList.remove('active');
+        this.currentCrudItemId = null;
+    }
+
+    editCrudItem(entity, id) {
+        this.openCrudModal(entity, 'edit', id);
+    }
+
+    async deleteCrudItem(entity, id) {
+        const confirmMsg = `Are you sure you want to delete this ${entity}? All linked records will be cascade deleted.`;
+        if (!confirm(confirmMsg)) return;
+
+        const endpoint = entity === 'transaction' ? `/transactions/${id}` : (entity === 'investor' ? `/investors/${id}` : `/funds/${id}`);
+
+        try {
+            await this.requestAPI(endpoint, 'DELETE');
+            this.showToast(`${entity.charAt(0).toUpperCase() + entity.slice(1)} deleted successfully!`, 'success');
+            this.loadCrudTab(this.currentCrudTab);
+            this.loadDashboard();
+        } catch (e) {
+            this.showToast(`Delete failed: ${e.message}`, 'error');
+        }
     }
 }
 
