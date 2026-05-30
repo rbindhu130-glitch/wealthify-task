@@ -34,7 +34,6 @@ To set up and run this application locally, you will need the following tools in
 3. Create a `.env` file (or update the existing one) with your database credentials:
    ```env
    DATABASE_URL=postgresql://<postgresql_username>:<postgresql_password>@localhost:5432/wealthify
-   DATA_FILE_PATH=app/data/dataset.csv
    ```
    *(Replace `<postgresql_username>` and `<postgresql_password>` with your actual PostgreSQL local credentials).*
 
@@ -61,12 +60,12 @@ To set up and run this application locally, you will need the following tools in
 
 ## 🚀 How to Run the Code
 
-### 1. Seed the Database
-Before running the backend for the first time, you must seed the database with baseline transaction data from the CSV file (`app/data/dataset.csv`):
-```bash
-python seed_db.py
+### 1. Create the Database
+Create a PostgreSQL database named `wealthify` using **pgAdmin** or the command line:
+```sql
+CREATE DATABASE wealthify;
 ```
-This script will automatically create the required database tables (Investors, Funds, and Transactions) and seed them with the standard dataset.
+The required tables (Investors, Funds, and Transactions) will be auto-created by SQLAlchemy when the backend starts. You can then add data directly via pgAdmin or through the application UI.
 
 ### 2. Start the Backend API Server
 Start the FastAPI server using `uvicorn`:
