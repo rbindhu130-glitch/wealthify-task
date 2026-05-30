@@ -651,6 +651,11 @@ class WealthifyApp {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: {
+                        padding: {
+                            bottom: 30
+                        }
+                    },
                     plugins: {
                         legend: { display: false },
                         tooltip: {
@@ -673,7 +678,7 @@ class WealthifyApp {
                                 maxRotation: 45,
                                 callback: function(val) {
                                     const label = this.getLabelForValue(val);
-                                    return label.length > 25 ? label.substring(0, 25) + '…' : label;
+                                    return label.length > 18 ? label.substring(0, 18) + '…' : label;
                                 }
                             },
                             grid: { display: false },
