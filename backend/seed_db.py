@@ -24,7 +24,7 @@ from datetime import datetime
 sys.path.insert(0, os.path.dirname(__file__))
 
 from app.core.database import engine, SessionLocal, Base
-from app.models.models import Transaction
+from app.models.models import Investor, Fund, Transaction
 from app.core.config import settings
 
 
@@ -170,6 +170,15 @@ def seed_from_csv(csv_path: str, drop_first: bool = False):
         inserted = 0
         skipped  = 0
 
+        investor_cache = {}
+        fund_cache = {}
+
+        # Fetch existing if any
+        for inv in db.query(Investor).all():
+            investor_cache[(inv.name, inv.pan_number)] = inv.id
+        for fnd in db.query(Fund).all():
+            fund_cache[fnd.name] = fnd.id
+
         with open(csv_path, newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f, delimiter=delimiter)
             for raw_row in reader:
@@ -178,12 +187,45 @@ def seed_from_csv(csv_path: str, drop_first: bool = False):
                     skipped += 1
                     continue
                 try:
-                    txn = Transaction(**mapped)
+                    # 1. Get or create Investor
+                    inv_key = (mapped["investor_name"], mapped["pan_number"])
+                    if inv_key not in investor_cache:
+                        inv = Investor(name=mapped["investor_name"], pan_number=mapped["pan_number"])
+                        db.add(inv)
+                        db.flush()
+                        investor_cache[inv_key] = inv.id
+                    investor_id = investor_cache[inv_key]
+
+                    # 2. Get or create Fund
+                    fund_name = mapped["mutual_fund"]
+                    if fund_name not in fund_cache:
+                        fnd = Fund(
+                            name=fund_name,
+                            amc_code=mapped.get("amc_code"),
+                            scheme_type=mapped.get("scheme_type")
+                        )
+                        db.add(fnd)
+                        db.flush()
+                        fund_cache[fund_name] = fnd.id
+                    fund_id = fund_cache[fund_name]
+
+                    # 3. Create Transaction
+                    txn = Transaction(
+                        investor_id=investor_id,
+                        fund_id=fund_id,
+                        folio_no=mapped.get("folio_no"),
+                        location=mapped.get("location"),
+                        tax_status=mapped.get("tax_status"),
+                        transaction_date=mapped.get("transaction_date"),
+                        amount=mapped["amount"],
+                        nav=mapped["nav"],
+                        units=mapped["units"]
+                    )
                     db.add(txn)
                     inserted += 1
                     if inserted % 500 == 0:
                         db.flush()
-                        print(f"  ... {inserted} rows inserted so far")
+                        print(f"  ... {inserted} transactions inserted so far")
                 except Exception as e:
                     skipped += 1
                     print(f"  Row error: {e}")
