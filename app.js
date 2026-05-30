@@ -7,6 +7,71 @@ const API_BASE = (window.location.hostname === 'localhost' || window.location.ho
     ? '/api'
     : 'http://localhost:8000/api';
 
+// ═════════════════════════════════════════════════════════════
+// OFFLINE MOCK DATA FOR DEMO MODE
+// ═════════════════════════════════════════════════════════════
+const MOCK_DATA = {
+    '/mutualfund-overall': [
+        {"mutual_fund":"Mahindra Manulife Mid Cap Fund - Regular - Growth","total_amount":46902.68,"total_units":1445.34,"average_nav":32.45},
+        {"mutual_fund":"Kotak Gold Fund - Growth (Regular Plan)","total_amount":24420.79,"total_units":661.80,"average_nav":36.90},
+        {"mutual_fund":"SBI Magnum Ultra Short Duration Fund Regular Growth","total_amount":20000.00,"total_units":3.36,"average_nav":5952.38},
+        {"mutual_fund":"SBI Small Cap Fund Regular Growth","total_amount":9999.50,"total_units":59.62,"average_nav":167.72},
+        {"mutual_fund":"DSP Nifty 50 Equal Weight Index Fund - Reg - Growth","total_amount":6499.68,"total_units":261.49,"average_nav":24.86},
+        {"mutual_fund":"ICICI Prudential Ultra Short Term Fund - Growth","total_amount":1500.00,"total_units":54.46,"average_nav":27.54}
+    ],
+    '/investor-summary': [
+        {"investor_name":"M Padmapriya","mutual_fund":"SBI Magnum Ultra Short Duration Fund Regular Growth","total_amount":20000.0,"total_units":3.36},
+        {"investor_name":"K Shyma","mutual_fund":"Mahindra Manulife Mid Cap Fund - Regular - Growth","total_amount":16499.18,"total_units":508.44},
+        {"investor_name":"M Padmapriya","mutual_fund":"SBI Small Cap Fund Regular Growth","total_amount":9999.5,"total_units":59.62},
+        {"investor_name":"K Shyma","mutual_fund":"Kotak Gold Fund - Growth (Regular Plan)","total_amount":8499.58,"total_units":230.33},
+        {"investor_name":"Meethala Pullutummal Narayani","mutual_fund":"DSP Nifty 50 Equal Weight Index Fund - Reg - Growth","total_amount":6499.68,"total_units":261.49},
+        {"investor_name":"Meethala Pullutummal Narayani","mutual_fund":"Kotak Gold Fund - Growth (Regular Plan)","total_amount":5499.73,"total_units":149.04},
+        {"investor_name":"Avinash Wadhwani","mutual_fund":"Mahindra Manulife Mid Cap Fund - Regular - Growth","total_amount":5199.74,"total_units":160.24},
+        {"investor_name":"Meethala Pullutummal Narayani","mutual_fund":"Mahindra Manulife Mid Cap Fund - Regular - Growth","total_amount":4399.78,"total_units":135.58},
+        {"investor_name":"S Vinoth Kumar","mutual_fund":"Mahindra Manulife Mid Cap Fund - Regular - Growth","total_amount":2999.85,"total_units":92.44},
+        {"investor_name":"Manikandan N Nepolian","mutual_fund":"Mahindra Manulife Mid Cap Fund - Regular - Growth","total_amount":2999.85,"total_units":92.44},
+        {"investor_name":"Nivedhitha Rajagopal","mutual_fund":"Mahindra Manulife Mid Cap Fund - Regular - Growth","total_amount":2591.87,"total_units":79.87},
+        {"investor_name":"Sheethal Balaji","mutual_fund":"Mahindra Manulife Mid Cap Fund - Regular - Growth","total_amount":2499.88,"total_units":77.04},
+        {"investor_name":"Manushia Jain","mutual_fund":"Mahindra Manulife Mid Cap Fund - Regular - Growth","total_amount":2299.89,"total_units":70.87},
+        {"investor_name":"Srividhya D","mutual_fund":"Mahindra Manulife Mid Cap Fund - Regular - Growth","total_amount":2299.89,"total_units":70.87},
+        {"investor_name":"R Sethupathy","mutual_fund":"Mahindra Manulife Mid Cap Fund - Regular - Growth","total_amount":2299.89,"total_units":70.87}
+    ],
+    '/fund-summary': [
+        {"mutual_fund":"DSP Nifty 50 Equal Weight Index Fund - Reg - Growth","investor_name":"Meethala Pullutummal Narayani","amount":6499.68,"units":261.49},
+        {"mutual_fund":"ICICI Prudential Ultra Short Term Fund - Growth","investor_name":"M Padmapriya","amount":1500.0,"units":54.46},
+        {"mutual_fund":"Kotak Gold Fund - Growth (Regular Plan)","investor_name":"K Shyma","amount":8499.58,"units":230.33},
+        {"mutual_fund":"Kotak Gold Fund - Growth (Regular Plan)","investor_name":"Meethala Pullutummal Narayani","amount":5499.73,"units":149.04},
+        {"mutual_fund":"Kotak Gold Fund - Growth (Regular Plan)","investor_name":"Priyavarshini Damodaran","amount":1999.9,"units":54.2},
+        {"mutual_fund":"Kotak Gold Fund - Growth (Regular Plan)","investor_name":"Avinash Wadhwani","amount":1949.9,"units":52.84},
+        {"mutual_fund":"Kotak Gold Fund - Growth (Regular Plan)","investor_name":"Shilpa J Suresh","amount":1491.93,"units":40.43},
+        {"mutual_fund":"Kotak Gold Fund - Growth (Regular Plan)","investor_name":"S Vinoth Kumar","amount":999.95,"units":27.1},
+        {"mutual_fund":"Kotak Gold Fund - Growth (Regular Plan)","investor_name":"Manikandan N Nepolian","amount":999.95,"units":27.1},
+        {"mutual_fund":"Kotak Gold Fund - Growth (Regular Plan)","investor_name":"Nivedhitha Rajagopal","amount":999.95,"units":27.1},
+        {"mutual_fund":"Kotak Gold Fund - Growth (Regular Plan)","investor_name":"R Sethupathy","amount":999.95,"units":27.1},
+        {"mutual_fund":"Kotak Gold Fund - Growth (Regular Plan)","investor_name":"Srijesh","amount":979.95,"units":26.56},
+        {"mutual_fund":"Mahindra Manulife Mid Cap Fund - Regular - Growth","investor_name":"K Shyma","amount":16499.18,"units":508.44},
+        {"mutual_fund":"Mahindra Manulife Mid Cap Fund - Regular - Growth","investor_name":"Avinash Wadhwani","amount":5199.74,"units":160.24},
+        {"mutual_fund":"Mahindra Manulife Mid Cap Fund - Regular - Growth","investor_name":"Meethala Pullutummal Narayani","amount":4399.78,"units":135.58}
+    ],
+    '/investors': [
+        {"investor_name":"M Padmapriya","pan_number":"ANIPP0516B","total_investment":31499.5},
+        {"investor_name":"K Shyma","pan_number":"ABCPS7064H","total_investment":24998.76},
+        {"investor_name":"Meethala Pullutummal Narayani","pan_number":"AAEPN3766A","total_investment":16399.19},
+        {"investor_name":"Avinash Wadhwani","pan_number":"ABAPW8282F","total_investment":7149.64},
+        {"investor_name":"Manikandan N Nepolian","pan_number":"BHXPM3600B","total_investment":3999.80},
+        {"investor_name":"S Vinoth Kumar","pan_number":"AFYPV6441F","total_investment":3999.80},
+        {"investor_name":"Nivedhitha Rajagopal","pan_number":"AVNPN8269J","total_investment":3591.82},
+        {"investor_name":"R Sethupathy","pan_number":"FPHPS1056H","total_investment":3299.84},
+        {"investor_name":"Srijesh","pan_number":"EFBPS7950P","total_investment":2792.86},
+        {"investor_name":"Sheethal Balaji","pan_number":"DCSPS9502J","total_investment":2499.88},
+        {"investor_name":"Srividhya D","pan_number":"BWHPS1316K","total_investment":2299.89},
+        {"investor_name":"Manushia Jain","pan_number":"BCFPJ2150L","total_investment":2299.89},
+        {"investor_name":"Priyavarshini Damodaran","pan_number":"HECPD7014E","total_investment":1999.90},
+        {"investor_name":"Shilpa J Suresh","pan_number":"FRSPS3248J","total_investment":1491.93},
+        {"investor_name":"Anirudh D","pan_number":"CEBPD0457D","total_investment":999.95}
+    ]
+};
+
 // ─────────────────────────────────────────────────────────────────
 // MAIN APP CLASS
 // ─────────────────────────────────────────────────────────────────
@@ -32,6 +97,10 @@ class WealthifyApp {
             fundInvestment: null,
             fundUnits: null,
         };
+
+        // Offline / Live API flags
+        this.shownMockNotice = false;
+        this.liveConnected = false;
 
         this.init();
     }
@@ -219,9 +288,42 @@ class WealthifyApp {
             if (!res.ok) {
                 throw new Error(`HTTP ${res.status}: ${res.statusText}`);
             }
+            
+            if (!this.liveConnected) {
+                this.liveConnected = true;
+                this.showToast("Connected to Live Backend API", "success");
+            }
             return await res.json();
         } catch (err) {
-            console.error(`API Error [${endpoint}]:`, err);
+            console.error(`API Error [${endpoint}]. Falling back to mock data:`, err);
+            
+            if (MOCK_DATA[endpoint]) {
+                if (!this.shownMockNotice) {
+                    this.shownMockNotice = true;
+                    this.showToast("Demo Mode: Loaded Offline Mock Data", "info");
+                }
+                
+                let mockResult = [...MOCK_DATA[endpoint]];
+                
+                // 1. Text search filter
+                if (params.search) {
+                    const q = params.search.toLowerCase();
+                    mockResult = mockResult.filter(item => 
+                        (item.investor_name && item.investor_name.toLowerCase().includes(q)) ||
+                        (item.mutual_fund && item.mutual_fund.toLowerCase().includes(q))
+                    );
+                }
+                
+                // 2. Pagination slicing
+                if (params.page && params.limit) {
+                    const start = (params.page - 1) * params.limit;
+                    const end = start + params.limit;
+                    mockResult = mockResult.slice(start, end);
+                }
+                
+                return mockResult;
+            }
+            
             this.showToast(`Failed to fetch data: ${err.message}`, 'error');
             return null;
         }
