@@ -21,6 +21,7 @@ class FundSummaryResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 class InvestorResponse(BaseModel):
+    id: int
     investor_name: str
     pan_number: str
     total_investment: float

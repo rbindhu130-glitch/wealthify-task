@@ -101,20 +101,22 @@ class DataService:
         limit: int = 10,
     ) -> List[Dict]:
         q = db.query(
+            Investor.id.label("id"),
             Investor.name.label("investor_name"),
             Investor.pan_number.label("pan_number"),
             func.sum(Transaction.amount).label("total_investment"),
-        ).join(Transaction.investor)
+        ).outerjoin(Transaction, Investor.id == Transaction.investor_id)
         q = self._apply_date_filter(q, start_date, end_date)
         if search:
             q = q.filter(Investor.name.ilike(f"%{search}%"))
         q = (
-            q.group_by(Investor.name, Investor.pan_number)
+            q.group_by(Investor.id, Investor.name, Investor.pan_number)
             .order_by(func.sum(Transaction.amount).desc())
         )
         rows = q.offset((page - 1) * limit).limit(limit).all()
         return [
             {
+                "id": r.id,
                 "investor_name": r.investor_name,
                 "pan_number": r.pan_number,
                 "total_investment": float(r.total_investment or 0),

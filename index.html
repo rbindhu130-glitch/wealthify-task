@@ -46,14 +46,9 @@
                     <span class="nav-label">Overview</span>
                     <span class="nav-indicator"></span>
                 </a>
-                <a href="#" class="nav-item" data-view="investor-summary" id="nav-investor-summary">
-                    <span class="nav-icon"><i class="fa-solid fa-users-viewfinder"></i></span>
-                    <span class="nav-label">Investor Summary</span>
-                    <span class="nav-indicator"></span>
-                </a>
-                <a href="#" class="nav-item" data-view="fund-summary" id="nav-fund-summary">
-                    <span class="nav-icon"><i class="fa-solid fa-building-columns"></i></span>
-                    <span class="nav-label">Fund Summary</span>
+                <a href="#" class="nav-item" data-view="transactions" id="nav-transactions">
+                    <span class="nav-icon"><i class="fa-solid fa-money-bill-transfer"></i></span>
+                    <span class="nav-label">Transactions</span>
                     <span class="nav-indicator"></span>
                 </a>
                 <a href="#" class="nav-item" data-view="investors" id="nav-investors">
@@ -61,13 +56,19 @@
                     <span class="nav-label">All Investors</span>
                     <span class="nav-indicator"></span>
                 </a>
-            </nav>
-
-            <div class="sidebar-section-label">DATA MANAGEMENT</div>
-            <nav class="nav-menu" role="navigation" aria-label="Management navigation">
-                <a href="#" class="nav-item" data-view="data-management" id="nav-data-management">
-                    <span class="nav-icon"><i class="fa-solid fa-database"></i></span>
-                    <span class="nav-label">Data Management</span>
+                <a href="#" class="nav-item" data-view="funds" id="nav-funds">
+                    <span class="nav-icon"><i class="fa-solid fa-building-columns"></i></span>
+                    <span class="nav-label">All Funds</span>
+                    <span class="nav-indicator"></span>
+                </a>
+                <a href="#" class="nav-item" data-view="investor-summary" id="nav-investor-summary">
+                    <span class="nav-icon"><i class="fa-solid fa-users-viewfinder"></i></span>
+                    <span class="nav-label">Investor Summary</span>
+                    <span class="nav-indicator"></span>
+                </a>
+                <a href="#" class="nav-item" data-view="fund-summary" id="nav-fund-summary">
+                    <span class="nav-icon"><i class="fa-solid fa-chart-line"></i></span>
+                    <span class="nav-label">Fund Summary</span>
                     <span class="nav-indicator"></span>
                 </a>
             </nav>
@@ -404,6 +405,9 @@
                             <button class="btn btn-primary" onclick="app.resetPageAndLoad('investors')">
                                 <i class="fa-solid fa-filter"></i> Apply
                             </button>
+                            <button class="btn btn-primary" onclick="app.openCrudModal('investor', 'add')">
+                                <i class="fa-solid fa-plus"></i> Add Investor
+                            </button>
                         </div>
                     </div>
 
@@ -422,12 +426,13 @@
                                         <th>Investor Name</th>
                                         <th>PAN Number</th>
                                         <th class="text-right">Total Investment (₹)</th>
+                                        <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="investors-tbody">
-                                    <tr class="skeleton-row"><td colspan="4"><div class="skeleton-line"></div></td></tr>
-                                    <tr class="skeleton-row"><td colspan="4"><div class="skeleton-line"></div></td></tr>
-                                    <tr class="skeleton-row"><td colspan="4"><div class="skeleton-line"></div></td></tr>
+                                    <tr class="skeleton-row"><td colspan="5"><div class="skeleton-line"></div></td></tr>
+                                    <tr class="skeleton-row"><td colspan="5"><div class="skeleton-line"></div></td></tr>
+                                    <tr class="skeleton-row"><td colspan="5"><div class="skeleton-line"></div></td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -450,135 +455,118 @@
                     </div>
                 </section>
 
-                <!-- ══════════════════════════════════ DATA MANAGEMENT (CRUD) ══════════════════════════════════ -->
-                <section id="data-management" class="view" aria-label="Data Management">
+                <!-- ══════════ VIEW: TRANSACTIONS ══════════ -->
+                <section id="transactions" class="view" aria-label="Transactions">
                     <div class="page-header">
                         <div class="page-title">
-                            <h1>Data Management</h1>
-                            <p class="page-subtitle">Add, edit, or delete Investors, Funds, and Transactions</p>
+                            <h1>Transactions</h1>
+                            <p class="page-subtitle">Detailed transaction ledger and tracking</p>
+                        </div>
+                        <div class="filters">
+                            <div class="filter-group search-group">
+                                <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                <input type="text" id="all-txns-search" class="search-input" placeholder="Search investor or fund..." aria-label="Search transactions">
+                            </div>
+                            <button class="btn btn-primary" onclick="app.openCrudModal('transaction', 'add')">
+                                <i class="fa-solid fa-plus"></i> Add Transaction
+                            </button>
                         </div>
                     </div>
 
-                    <!-- Tabs Header -->
-                    <div class="crud-tabs">
-                        <button class="crud-tab active" data-tab="crud-transactions">
-                            <i class="fa-solid fa-receipt"></i> Transactions
-                        </button>
-                        <button class="crud-tab" data-tab="crud-investors">
-                            <i class="fa-solid fa-users"></i> Investors
-                        </button>
-                        <button class="crud-tab" data-tab="crud-funds">
-                            <i class="fa-solid fa-building-columns"></i> Funds
-                        </button>
+                    <div class="card table-card">
+                        <div class="table-responsive">
+                            <table class="data-table" id="transactions-list-table" aria-label="Transactions list table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Investor</th>
+                                        <th>Mutual Fund</th>
+                                        <th>Date</th>
+                                        <th class="text-right">Amount (₹)</th>
+                                        <th class="text-right">NAV (₹)</th>
+                                        <th class="text-right">Units</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactions-tbody">
+                                    <tr class="skeleton-row"><td colspan="8"><div class="skeleton-line"></div></td></tr>
+                                    <tr class="skeleton-row"><td colspan="8"><div class="skeleton-line"></div></td></tr>
+                                    <tr class="skeleton-row"><td colspan="8"><div class="skeleton-line"></div></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-empty hidden" id="transactions-empty">
+                            <i class="fa-solid fa-inbox"></i>
+                            <p>No transactions found.</p>
+                        </div>
+                        <div class="pagination-bar">
+                            <span class="pagination-info" id="all-txns-page-info">Page 1</span>
+                            <div class="pagination-controls">
+                                <button class="pag-btn" id="all-txns-prev" onclick="app.prevPage('transactions')" disabled aria-label="Previous page">
+                                    <i class="fa-solid fa-chevron-left"></i> Prev
+                                </button>
+                                <span class="pag-current" id="all-txns-page-num">1</span>
+                                <button class="pag-btn" id="all-txns-next" onclick="app.nextPage('transactions')" aria-label="Next page">
+                                    Next <i class="fa-solid fa-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ══════════ VIEW: FUNDS ══════════ -->
+                <section id="funds" class="view" aria-label="All Funds">
+                    <div class="page-header">
+                        <div class="page-title">
+                            <h1>All Funds</h1>
+                            <p class="page-subtitle">Mutual fund scheme directory and management</p>
+                        </div>
+                        <div class="filters">
+                            <div class="filter-group search-group">
+                                <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                <input type="text" id="all-funds-search" class="search-input" placeholder="Search fund name or AMC..." aria-label="Search all funds">
+                            </div>
+                            <button class="btn btn-primary" onclick="app.openCrudModal('fund', 'add')">
+                                <i class="fa-solid fa-plus"></i> Add Fund
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Tab Contents -->
-                    <div class="crud-content-wrapper">
-                        
-                        <!-- ─── A. TRANSACTIONS TAB ─── -->
-                        <div id="crud-transactions" class="crud-tab-panel active">
-                            <div class="crud-panel-header">
-                                <div class="search-group">
-                                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                                    <input type="text" id="crud-txn-search" class="search-input" placeholder="Search transactions...">
-                                </div>
-                                <button class="btn btn-primary" id="btn-add-txn">
-                                    <i class="fa-solid fa-plus"></i> Add Transaction
+                    <div class="card table-card">
+                        <div class="table-responsive">
+                            <table class="data-table" id="funds-list-table" aria-label="Funds list table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Fund Name</th>
+                                        <th>AMC Code</th>
+                                        <th>Scheme Type</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="funds-tbody">
+                                    <tr class="skeleton-row"><td colspan="5"><div class="skeleton-line"></div></td></tr>
+                                    <tr class="skeleton-row"><td colspan="5"><div class="skeleton-line"></div></td></tr>
+                                    <tr class="skeleton-row"><td colspan="5"><div class="skeleton-line"></div></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-empty hidden" id="funds-empty">
+                            <i class="fa-solid fa-inbox"></i>
+                            <p>No funds found.</p>
+                        </div>
+                        <div class="pagination-bar">
+                            <span class="pagination-info" id="all-funds-page-info">Page 1</span>
+                            <div class="pagination-controls">
+                                <button class="pag-btn" id="all-funds-prev" onclick="app.prevPage('funds')" disabled aria-label="Previous page">
+                                    <i class="fa-solid fa-chevron-left"></i> Prev
+                                </button>
+                                <span class="pag-current" id="all-funds-page-num">1</span>
+                                <button class="pag-btn" id="all-funds-next" onclick="app.nextPage('funds')" aria-label="Next page">
+                                    Next <i class="fa-solid fa-chevron-right"></i>
                                 </button>
                             </div>
-                            <div class="card table-card">
-                                <div class="table-responsive">
-                                    <table class="data-table">
-                                        <thead>
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Investor</th>
-                                                <th>Mutual Fund</th>
-                                                <th>Date</th>
-                                                <th class="text-right">Amount</th>
-                                                <th class="text-right">NAV</th>
-                                                <th class="text-right">Units</th>
-                                                <th class="text-center">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="crud-txn-tbody">
-                                            <!-- Dynamic rows -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div class="pagination-footer" id="crud-txn-pagination">
-                                    <!-- Dynamic pagination -->
-                                </div>
-                            </div>
                         </div>
-
-                        <!-- ─── B. INVESTORS TAB ─── -->
-                        <div id="crud-investors" class="crud-tab-panel">
-                            <div class="crud-panel-header">
-                                <div class="search-group">
-                                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                                    <input type="text" id="crud-inv-search" class="search-input" placeholder="Search investors...">
-                                </div>
-                                <button class="btn btn-primary" id="btn-add-inv">
-                                    <i class="fa-solid fa-plus"></i> Add Investor
-                                </button>
-                            </div>
-                            <div class="card table-card">
-                                <div class="table-responsive">
-                                    <table class="data-table">
-                                        <thead>
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Name</th>
-                                                <th>PAN Number</th>
-                                                <th class="text-center">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="crud-inv-tbody">
-                                            <!-- Dynamic rows -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div class="pagination-footer" id="crud-inv-pagination">
-                                    <!-- Dynamic pagination -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- ─── C. FUNDS TAB ─── -->
-                        <div id="crud-funds" class="crud-tab-panel">
-                            <div class="crud-panel-header">
-                                <div class="search-group">
-                                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                                    <input type="text" id="crud-fund-search" class="search-input" placeholder="Search funds...">
-                                </div>
-                                <button class="btn btn-primary" id="btn-add-fund">
-                                    <i class="fa-solid fa-plus"></i> Add Fund
-                                </button>
-                            </div>
-                            <div class="card table-card">
-                                <div class="table-responsive">
-                                    <table class="data-table">
-                                        <thead>
-                                            <tr>
-                                                <th>ID</th>
-                                                <th>Fund Name</th>
-                                                <th>AMC Code</th>
-                                                <th>Scheme Type</th>
-                                                <th class="text-center">Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="crud-fund-tbody">
-                                            <!-- Dynamic rows -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div class="pagination-footer" id="crud-fund-pagination">
-                                    <!-- Dynamic pagination -->
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
                 </section>
 
