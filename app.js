@@ -3,7 +3,9 @@
    Pure JavaScript dashboard — connects to FastAPI backend
    ═══════════════════════════════════════════════════════════════ */
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? '/api'
+    : 'http://localhost:8000/api';
 
 // ─────────────────────────────────────────────────────────────────
 // MAIN APP CLASS
@@ -206,7 +208,7 @@ class WealthifyApp {
     // ═════════════════════════════════════════════════════════════
     async fetchAPI(endpoint, params = {}) {
         try {
-            const url = new URL(`${API_BASE}${endpoint}`);
+            const url = new URL(`${API_BASE}${endpoint}`, window.location.origin);
             Object.entries(params).forEach(([key, val]) => {
                 if (val !== undefined && val !== null && val !== '') {
                     url.searchParams.append(key, val);
