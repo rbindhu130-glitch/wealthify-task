@@ -85,22 +85,17 @@ class WealthifyApp {
             investorSummary: 1,
             fundSummary: 1,
             investors: 1,
+            transactions: 1,
+            funds: 1,
         };
         this.pageSize = 15;
 
         // CRUD state variables
-        this.crudPages = {
-            transactions: 1,
-            investors: 1,
-            funds: 1
-        };
-        this.crudPageSize = 10;
         this.crudSearch = {
             transactions: '',
             investors: '',
             funds: ''
         };
-        this.currentCrudTab = 'crud-transactions';
         this.currentCrudEntity = null;
         this.currentCrudAction = null;
         this.currentCrudItemId = null;
@@ -198,19 +193,21 @@ class WealthifyApp {
         const bc = document.getElementById('breadcrumb-current');
         const labels = {
             'dashboard': 'Overview',
+            'transactions': 'Transactions',
+            'investors': 'All Investors',
+            'funds': 'All Funds',
             'investor-summary': 'Investor Summary',
             'fund-summary': 'Fund Summary',
-            'investors': 'All Investors',
-            'data-management': 'Data Management',
         };
         if (bc) bc.textContent = labels[viewId] || viewId;
 
         // Load data
         if (viewId === 'dashboard') this.loadDashboard();
+        if (viewId === 'transactions') this.loadTransactionsList();
+        if (viewId === 'investors') this.loadInvestorsList();
+        if (viewId === 'funds') this.loadFundsList();
         if (viewId === 'investor-summary') this.loadInvestorSummary();
         if (viewId === 'fund-summary') this.loadFundSummary();
-        if (viewId === 'investors') this.loadInvestorsList();
-        if (viewId === 'data-management') this.loadDataManagement();
     }
 
     // ═════════════════════════════════════════════════════════════
@@ -760,7 +757,7 @@ class WealthifyApp {
         const endDate   = document.getElementById('all-inv-end-date')?.value;
         const page      = this.pages.investors;
 
-        this.showSkeleton('investors-tbody', 4, 5);
+        this.showSkeleton('investors-tbody', 5, 5);
 
         const data = await this.fetchAPI('/investors', {
             search,
@@ -784,9 +781,19 @@ class WealthifyApp {
             tbody.innerHTML = data.map((r, i) => `
                 <tr>
                     <td><span class="row-index">${offset + i + 1}</span></td>
-                    <td>${this.escapeHtml(r.investor_name)}</td>
+                    <td><strong>${this.escapeHtml(r.investor_name)}</strong></td>
                     <td><code style="font-size:0.8rem;color:var(--text-muted)">${this.escapeHtml(r.pan_number)}</code></td>
                     <td class="text-right"><span class="amount-text">${this.formatCurrency(r.total_investment)}</span></td>
+                    <td>
+                        <div class="action-btn-group">
+                            <button class="action-btn action-btn-edit" onclick="app.editCrudItem('investor', ${r.id})" aria-label="Edit investor">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button class="action-btn action-btn-delete" onclick="app.deleteCrudItem('investor', ${r.id})" aria-label="Delete investor">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
                 </tr>
             `).join('');
         }
@@ -834,6 +841,8 @@ class WealthifyApp {
         if (viewKey === 'investorSummary') this.loadInvestorSummary();
         if (viewKey === 'fundSummary') this.loadFundSummary();
         if (viewKey === 'investors') this.loadInvestorsList();
+        if (viewKey === 'transactions') this.loadTransactionsList();
+        if (viewKey === 'funds') this.loadFundsList();
     }
 
     // ═════════════════════════════════════════════════════════════
@@ -851,62 +860,27 @@ class WealthifyApp {
         return text.length > max ? text.substring(0, max) + '…' : text;
     }
 
-    // ═════════════════════════════════════════════════════════════
-    // CRUD EVENT LISTENERS & LOGIC
-    // ═════════════════════════════════════════════════════════════
     setupCrud() {
-        // Tab switching logic
-        const tabs = document.querySelectorAll('.crud-tab');
-        tabs.forEach(tab => {
-            tab.addEventListener('click', () => {
-                tabs.forEach(t => t.classList.remove('active'));
-                tab.classList.add('active');
-                const tabId = tab.getAttribute('data-tab');
-                this.currentCrudTab = tabId;
-                document.querySelectorAll('.crud-tab-panel').forEach(panel => {
-                    panel.classList.remove('active');
-                });
-                document.getElementById(tabId).classList.add('active');
-                this.loadCrudTab(tabId);
-            });
-        });
-
         // Search inputs
-        document.getElementById('crud-txn-search')?.addEventListener('input', (e) => {
+        document.getElementById('all-txns-search')?.addEventListener('input', (e) => {
             this.crudSearch.transactions = e.target.value;
-            this.crudPages.transactions = 1;
-            this.loadCrudTransactions();
+            this.pages.transactions = 1;
+            this.loadTransactionsList();
         });
-        document.getElementById('crud-inv-search')?.addEventListener('input', (e) => {
-            this.crudSearch.investors = e.target.value;
-            this.crudPages.investors = 1;
-            this.loadCrudInvestors();
+        document.getElementById('all-inv-search')?.addEventListener('input', (e) => {
+            this.pages.investors = 1;
+            this.loadInvestorsList();
         });
-        document.getElementById('crud-fund-search')?.addEventListener('input', (e) => {
+        document.getElementById('all-funds-search')?.addEventListener('input', (e) => {
             this.crudSearch.funds = e.target.value;
-            this.crudPages.funds = 1;
-            this.loadCrudFunds();
+            this.pages.funds = 1;
+            this.loadFundsList();
         });
-
-        // Add Buttons
-        document.getElementById('btn-add-txn')?.addEventListener('click', () => this.openCrudModal('transaction', 'add'));
-        document.getElementById('btn-add-inv')?.addEventListener('click', () => this.openCrudModal('investor', 'add'));
-        document.getElementById('btn-add-fund')?.addEventListener('click', () => this.openCrudModal('fund', 'add'));
 
         // Modal close / cancel
         document.getElementById('crud-modal-close')?.addEventListener('click', () => this.closeCrudModal());
         document.getElementById('btn-modal-cancel')?.addEventListener('click', () => this.closeCrudModal());
         document.getElementById('btn-modal-save')?.addEventListener('click', () => this.submitCrudForm());
-    }
-
-    loadCrudTab(tabId) {
-        if (tabId === 'crud-transactions') this.loadCrudTransactions();
-        if (tabId === 'crud-investors') this.loadCrudInvestors();
-        if (tabId === 'crud-funds') this.loadCrudFunds();
-    }
-
-    loadDataManagement() {
-        this.loadCrudTab(this.currentCrudTab);
     }
 
     // ── CRUD Request Wrapper with Offline Simulation ──
@@ -1103,14 +1077,14 @@ class WealthifyApp {
             const inv = investorsList.find(i => i.id === t.investor_id);
             if (inv) {
                 if (!invMap[inv.name]) {
-                    invMap[inv.name] = { investor_name: inv.name, pan_number: inv.pan_number, total_investment: 0 };
+                    invMap[inv.name] = { id: inv.id, investor_name: inv.name, pan_number: inv.pan_number, total_investment: 0 };
                 }
                 invMap[inv.name].total_investment += t.amount;
             }
         });
         investorsList.forEach(inv => {
             if (!invMap[inv.name]) {
-                invMap[inv.name] = { investor_name: inv.name, pan_number: inv.pan_number, total_investment: 0 };
+                invMap[inv.name] = { id: inv.id, investor_name: inv.name, pan_number: inv.pan_number, total_investment: 0 };
             }
         });
         MOCK_DATA['/investors'] = Object.values(invMap);
@@ -1138,198 +1112,108 @@ class WealthifyApp {
     }
 
     // ── CRUD View Fetch & Renderers ──
-    async loadCrudTransactions() {
-        const tbody = document.getElementById('crud-txn-tbody');
+    async loadTransactionsList() {
+        const tbody = document.getElementById('transactions-tbody');
         if (!tbody) return;
 
-        tbody.innerHTML = `
-            <tr class="skeleton-row"><td colspan="8"><div class="skeleton-line"></div></td></tr>
-            <tr class="skeleton-row"><td colspan="8"><div class="skeleton-line"></div></td></tr>
-        `;
+        this.showSkeleton('transactions-tbody', 8, 5);
 
         try {
-            const limit = this.crudPageSize;
-            const page = this.crudPages.transactions;
-            const txns = await this.requestAPI('/transactions', 'GET', null, {
-                search: this.crudSearch.transactions,
+            const search = document.getElementById('all-txns-search')?.value || '';
+            const page = this.pages.transactions;
+            const data = await this.fetchAPI('/transactions', {
+                search,
                 page,
-                limit
+                limit: this.pageSize
             }) || [];
 
-            const nextTxns = await this.requestAPI('/transactions', 'GET', null, {
-                search: this.crudSearch.transactions,
-                page: page + 1,
-                limit
-            }) || [];
-            const hasNext = nextTxns.length > 0;
-            const totalPages = hasNext ? page + 1 : page;
+            this.toggleEmpty('transactions-empty', data.length === 0);
 
-            const allInv = await this.requestAPI('/investors/list', 'GET', null, { limit: 100 }) || [];
-            const allFunds = await this.requestAPI('/funds/list', 'GET', null, { limit: 100 }) || [];
+            if (data.length === 0) {
+                tbody.innerHTML = '';
+            } else {
+                const allInv = await this.requestAPI('/investors/list', 'GET', null, { limit: 100 }) || [];
+                const allFunds = await this.requestAPI('/funds/list', 'GET', null, { limit: 100 }) || [];
 
-            const invMap = {};
-            allInv.forEach(i => invMap[i.id] = i.name);
-            const fundMap = {};
-            allFunds.forEach(f => fundMap[f.id] = f.name);
+                const invMap = {};
+                allInv.forEach(i => invMap[i.id] = i.name);
+                const fundMap = {};
+                allFunds.forEach(f => fundMap[f.id] = f.name);
 
-            if (txns.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="8" class="table-empty"><i class="fa-solid fa-inbox"></i><p>No transactions found.</p></td></tr>`;
-                this.renderPagination('crud-txn-pagination', page, 1, () => {});
-                return;
+                tbody.innerHTML = data.map(t => {
+                    const invName = invMap[t.investor_id] || `Investor #${t.investor_id}`;
+                    const fundName = fundMap[t.fund_id] || `Fund #${t.fund_id}`;
+                    return `
+                        <tr>
+                            <td><span class="row-index">${t.id}</span></td>
+                            <td><strong>${this.escapeHtml(invName)}</strong></td>
+                            <td><span class="fund-tag">${this.escapeHtml(fundName)}</span></td>
+                            <td>${t.transaction_date}</td>
+                            <td class="text-right amount-text">${this.formatCurrency(t.amount)}</td>
+                            <td class="text-right">${this.formatNumber(t.nav)}</td>
+                            <td class="text-right">${this.formatNumber(t.units)}</td>
+                            <td>
+                                <div class="action-btn-group">
+                                    <button class="action-btn action-btn-edit" onclick="app.editCrudItem('transaction', ${t.id})" aria-label="Edit transaction">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                    <button class="action-btn action-btn-delete" onclick="app.deleteCrudItem('transaction', ${t.id})" aria-label="Delete transaction">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
             }
 
-            tbody.innerHTML = txns.map(t => {
-                const invName = invMap[t.investor_id] || `Investor #${t.investor_id}`;
-                const fundName = fundMap[t.fund_id] || `Fund #${t.fund_id}`;
-                return `
-                    <tr>
-                        <td><span class="row-index">${t.id}</span></td>
-                        <td><strong>${this.escapeHtml(invName)}</strong></td>
-                        <td><span class="fund-tag">${this.escapeHtml(fundName)}</span></td>
-                        <td>${t.transaction_date}</td>
-                        <td class="text-right amount-text">${this.formatCurrency(t.amount)}</td>
-                        <td class="text-right">${this.formatNumber(t.nav)}</td>
-                        <td class="text-right">${this.formatNumber(t.units)}</td>
-                        <td>
-                            <div class="action-btn-group">
-                                <button class="action-btn action-btn-edit" onclick="app.editCrudItem('transaction', ${t.id})" aria-label="Edit transaction">
-                                    <i class="fa-solid fa-pen"></i>
-                                </button>
-                                <button class="action-btn action-btn-delete" onclick="app.deleteCrudItem('transaction', ${t.id})" aria-label="Delete transaction">
-                                    <i class="fa-solid fa-trash-can"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-
-            this.renderPagination('crud-txn-pagination', page, totalPages, (targetPage) => {
-                this.crudPages.transactions = targetPage;
-                this.loadCrudTransactions();
-            });
-
+            this.updatePagination('all-txns', page, data.length);
         } catch (e) {
             tbody.innerHTML = `<tr><td colspan="8" class="table-empty">Error loading transactions: ${e.message}</td></tr>`;
         }
     }
 
-    async loadCrudInvestors() {
-        const tbody = document.getElementById('crud-inv-tbody');
+    async loadFundsList() {
+        const tbody = document.getElementById('funds-tbody');
         if (!tbody) return;
 
-        tbody.innerHTML = `
-            <tr class="skeleton-row"><td colspan="4"><div class="skeleton-line"></div></td></tr>
-            <tr class="skeleton-row"><td colspan="4"><div class="skeleton-line"></div></td></tr>
-        `;
+        this.showSkeleton('funds-tbody', 5, 5);
 
         try {
-            const limit = this.crudPageSize;
-            const page = this.crudPages.investors;
-            const investors = await this.requestAPI('/investors/list', 'GET', null, {
-                search: this.crudSearch.investors,
+            const search = document.getElementById('all-funds-search')?.value || '';
+            const page = this.pages.funds;
+            const data = await this.fetchAPI('/funds/list', {
+                search,
                 page,
-                limit
+                limit: this.pageSize
             }) || [];
 
-            const nextInv = await this.requestAPI('/investors/list', 'GET', null, {
-                search: this.crudSearch.investors,
-                page: page + 1,
-                limit
-            }) || [];
-            const hasNext = nextInv.length > 0;
-            const totalPages = hasNext ? page + 1 : page;
+            this.toggleEmpty('funds-empty', data.length === 0);
 
-            if (investors.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" class="table-empty"><i class="fa-solid fa-inbox"></i><p>No investors found.</p></td></tr>`;
-                this.renderPagination('crud-inv-pagination', page, 1, () => {});
-                return;
+            if (data.length === 0) {
+                tbody.innerHTML = '';
+            } else {
+                tbody.innerHTML = data.map(f => `
+                    <tr>
+                        <td><span class="row-index">${f.id}</span></td>
+                        <td><strong>${this.escapeHtml(f.name)}</strong></td>
+                        <td><span class="fund-tag">${this.escapeHtml(f.amc_code || 'N/A')}</span></td>
+                        <td>${this.escapeHtml(f.scheme_type || 'N/A')}</td>
+                        <td>
+                            <div class="action-btn-group">
+                                <button class="action-btn action-btn-edit" onclick="app.editCrudItem('fund', ${f.id})" aria-label="Edit fund">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <button class="action-btn action-btn-delete" onclick="app.deleteCrudItem('fund', ${f.id})" aria-label="Delete fund">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
             }
 
-            tbody.innerHTML = investors.map(i => `
-                <tr>
-                    <td><span class="row-index">${i.id}</span></td>
-                    <td><strong>${this.escapeHtml(i.name)}</strong></td>
-                    <td><code>${this.escapeHtml(i.pan_number)}</code></td>
-                    <td>
-                        <div class="action-btn-group">
-                            <button class="action-btn action-btn-edit" onclick="app.editCrudItem('investor', ${i.id})" aria-label="Edit investor">
-                                <i class="fa-solid fa-pen"></i>
-                            </button>
-                            <button class="action-btn action-btn-delete" onclick="app.deleteCrudItem('investor', ${i.id})" aria-label="Delete investor">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
-
-            this.renderPagination('crud-inv-pagination', page, totalPages, (targetPage) => {
-                this.crudPages.investors = targetPage;
-                this.loadCrudInvestors();
-            });
-
-        } catch (e) {
-            tbody.innerHTML = `<tr><td colspan="4" class="table-empty">Error loading investors: ${e.message}</td></tr>`;
-        }
-    }
-
-    async loadCrudFunds() {
-        const tbody = document.getElementById('crud-fund-tbody');
-        if (!tbody) return;
-
-        tbody.innerHTML = `
-            <tr class="skeleton-row"><td colspan="5"><div class="skeleton-line"></div></td></tr>
-            <tr class="skeleton-row"><td colspan="5"><div class="skeleton-line"></div></td></tr>
-        `;
-
-        try {
-            const limit = this.crudPageSize;
-            const page = this.crudPages.funds;
-            const funds = await this.requestAPI('/funds/list', 'GET', null, {
-                search: this.crudSearch.funds,
-                page,
-                limit
-            }) || [];
-
-            const nextFunds = await this.requestAPI('/funds/list', 'GET', null, {
-                search: this.crudSearch.funds,
-                page: page + 1,
-                limit
-            }) || [];
-            const hasNext = nextFunds.length > 0;
-            const totalPages = hasNext ? page + 1 : page;
-
-            if (funds.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="table-empty"><i class="fa-solid fa-inbox"></i><p>No funds found.</p></td></tr>`;
-                this.renderPagination('crud-fund-pagination', page, 1, () => {});
-                return;
-            }
-
-            tbody.innerHTML = funds.map(f => `
-                <tr>
-                    <td><span class="row-index">${f.id}</span></td>
-                    <td><strong>${this.escapeHtml(f.name)}</strong></td>
-                    <td><span class="fund-tag">${this.escapeHtml(f.amc_code || 'N/A')}</span></td>
-                    <td>${this.escapeHtml(f.scheme_type || 'N/A')}</td>
-                    <td>
-                        <div class="action-btn-group">
-                            <button class="action-btn action-btn-edit" onclick="app.editCrudItem('fund', ${f.id})" aria-label="Edit fund">
-                                <i class="fa-solid fa-pen"></i>
-                            </button>
-                            <button class="action-btn action-btn-delete" onclick="app.deleteCrudItem('fund', ${f.id})" aria-label="Delete fund">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
-
-            this.renderPagination('crud-fund-pagination', page, totalPages, (targetPage) => {
-                this.crudPages.funds = targetPage;
-                this.loadCrudFunds();
-            });
-
+            this.updatePagination('all-funds', page, data.length);
         } catch (e) {
             tbody.innerHTML = `<tr><td colspan="5" class="table-empty">Error loading funds: ${e.message}</td></tr>`;
         }
@@ -1564,7 +1448,7 @@ class WealthifyApp {
             await this.requestAPI(endpoint, method, body);
             this.showToast(`${entity.charAt(0).toUpperCase() + entity.slice(1)} ${action === 'add' ? 'created' : 'updated'} successfully!`, 'success');
             this.closeCrudModal();
-            this.loadCrudTab(this.currentCrudTab);
+            this.loadViewByKey(this.currentView);
             this.loadDashboard();
         } catch (e) {
             this.showToast(`Operation failed: ${e.message}`, 'error');
@@ -1590,7 +1474,7 @@ class WealthifyApp {
         try {
             await this.requestAPI(endpoint, 'DELETE');
             this.showToast(`${entity.charAt(0).toUpperCase() + entity.slice(1)} deleted successfully!`, 'success');
-            this.loadCrudTab(this.currentCrudTab);
+            this.loadViewByKey(this.currentView);
             this.loadDashboard();
         } catch (e) {
             this.showToast(`Delete failed: ${e.message}`, 'error');
