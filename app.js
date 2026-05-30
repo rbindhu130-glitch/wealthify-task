@@ -114,6 +114,43 @@ class WealthifyApp {
         this.shownMockNotice = false;
         this.liveConnected = false;
 
+        // Initialize mock lists if not present, and calculate initial mock aggregates in nested format
+        if (typeof MOCK_DATA !== 'undefined') {
+            if (!MOCK_DATA['/investors/list']) {
+                MOCK_DATA['/investors/list'] = [
+                    { id: 1, name: "M Padmapriya", pan_number: "ANIPP0516B" },
+                    { id: 2, name: "K Shyma", pan_number: "ABCPS7064H" },
+                    { id: 3, name: "Meethala Pullutummal Narayani", pan_number: "AAEPN3766A" },
+                    { id: 4, name: "Avinash Wadhwani", pan_number: "ABAPW8282F" },
+                    { id: 5, name: "Manikandan N Nepolian", pan_number: "BHXPM3600B" },
+                    { id: 6, name: "S Vinoth Kumar", pan_number: "AFYPV6441F" },
+                    { id: 7, name: "Nivedhitha Rajagopal", pan_number: "AVNPN8269J" },
+                    { id: 8, name: "R Sethupathy", pan_number: "FPHPS1056H" },
+                    { id: 9, name: "Srijesh", pan_number: "EFBPS7950P" },
+                    { id: 10, name: "Sheethal Balaji", pan_number: "DCSPS9502J" }
+                ];
+            }
+            if (!MOCK_DATA['/funds/list']) {
+                MOCK_DATA['/funds/list'] = [
+                    { id: 1, name: "Mahindra Manulife Mid Cap Fund - Regular - Growth", amc_code: "MM", scheme_type: "Equity" },
+                    { id: 2, name: "Kotak Gold Fund - Growth (Regular Plan)", amc_code: "K", scheme_type: "Gold" },
+                    { id: 3, name: "SBI Magnum Ultra Short Duration Fund Regular Growth", amc_code: "SBI", scheme_type: "Debt" },
+                    { id: 4, name: "SBI Small Cap Fund Regular Growth", amc_code: "SBI", scheme_type: "Equity" },
+                    { id: 5, name: "DSP Nifty 50 Equal Weight Index Fund - Reg - Growth", amc_code: "DSP", scheme_type: "Equity" },
+                    { id: 6, name: "ICICI Prudential Ultra Short Term Fund - Growth", amc_code: "ICICI", scheme_type: "Debt" }
+                ];
+            }
+            if (!MOCK_DATA['/transactions']) {
+                MOCK_DATA['/transactions'] = [
+                    { id: 1, investor_id: 1, fund_id: 3, transaction_date: "2025-05-27", amount: 20000.0, nav: 5952.38, units: 3.36, folio_no: "50100", location: "Mumbai", tax_status: "Individual" },
+                    { id: 2, investor_id: 2, fund_id: 1, transaction_date: "2025-05-27", amount: 16499.18, nav: 32.45, units: 508.44, folio_no: "50200", location: "Mumbai", tax_status: "Individual" },
+                    { id: 3, investor_id: 1, fund_id: 4, transaction_date: "2025-05-27", amount: 9999.5, nav: 167.72, units: 59.62, folio_no: "50300", location: "Mumbai", tax_status: "Individual" },
+                    { id: 4, investor_id: 2, fund_id: 2, transaction_date: "2025-05-27", amount: 8499.58, nav: 36.90, units: 230.33, folio_no: "50400", location: "Mumbai", tax_status: "Individual" }
+                ];
+            }
+            this.recalculateMockAggregates();
+        }
+
         this.init();
     }
 
@@ -688,14 +725,54 @@ class WealthifyApp {
         if (data.length === 0) {
             tbody.innerHTML = '';
         } else {
-            tbody.innerHTML = data.map(r => `
-                <tr>
-                    <td>${this.escapeHtml(r.investor_name)}</td>
-                    <td><span class="fund-tag">${this.escapeHtml(r.mutual_fund)}</span></td>
+            tbody.innerHTML = data.map((r, index) => `
+                <tr class="accordion-parent-row" data-target="inv-${index}">
+                    <td class="accordion-chevron-cell"><span class="accordion-chevron"><i class="fa-solid fa-chevron-right"></i></span></td>
+                    <td><strong>${this.escapeHtml(r.investor_name)}</strong></td>
                     <td class="text-right"><span class="amount-text">${this.formatCurrency(r.total_amount)}</span></td>
                     <td class="text-right">${this.formatNumber(r.total_units)}</td>
                 </tr>
+                <tr class="nested-table-row hidden" id="inv-${index}">
+                    <td colspan="4">
+                        <div class="nested-table-container">
+                            <table class="nested-table">
+                                <thead>
+                                    <tr>
+                                        <th>Mutual Fund</th>
+                                        <th class="text-right">Amount (₹)</th>
+                                        <th class="text-right">Units</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${r.funds.map(f => `
+                                        <tr>
+                                            <td><span class="fund-tag">${this.escapeHtml(f.mutual_fund)}</span></td>
+                                            <td class="text-right"><span class="amount-text">${this.formatCurrency(f.total_amount)}</span></td>
+                                            <td class="text-right">${this.formatNumber(f.total_units)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
             `).join('');
+        }
+
+        // Setup accordion click handlers using delegation if not already set
+        if (!tbody.dataset.accordionWired) {
+            tbody.dataset.accordionWired = 'true';
+            tbody.addEventListener('click', (e) => {
+                const parentRow = e.target.closest('.accordion-parent-row');
+                if (!parentRow) return;
+                
+                const targetId = parentRow.dataset.target;
+                const childRow = document.getElementById(targetId);
+                if (childRow) {
+                    const isExpanded = parentRow.classList.toggle('expanded');
+                    childRow.classList.toggle('hidden', !isExpanded);
+                }
+            });
         }
 
         // Update pagination
@@ -732,14 +809,54 @@ class WealthifyApp {
         if (data.length === 0) {
             tbody.innerHTML = '';
         } else {
-            tbody.innerHTML = data.map(r => `
-                <tr>
-                    <td><span class="fund-tag">${this.escapeHtml(r.mutual_fund)}</span></td>
-                    <td>${this.escapeHtml(r.investor_name)}</td>
-                    <td class="text-right"><span class="amount-text">${this.formatCurrency(r.amount)}</span></td>
-                    <td class="text-right">${this.formatNumber(r.units)}</td>
+            tbody.innerHTML = data.map((r, index) => `
+                <tr class="accordion-parent-row" data-target="fund-${index}">
+                    <td class="accordion-chevron-cell"><span class="accordion-chevron"><i class="fa-solid fa-chevron-right"></i></span></td>
+                    <td><strong>${this.escapeHtml(r.mutual_fund)}</strong></td>
+                    <td class="text-right"><span class="amount-text">${this.formatCurrency(r.total_amount)}</span></td>
+                    <td class="text-right">${this.formatNumber(r.total_units)}</td>
+                </tr>
+                <tr class="nested-table-row hidden" id="fund-${index}">
+                    <td colspan="4">
+                        <div class="nested-table-container">
+                            <table class="nested-table">
+                                <thead>
+                                    <tr>
+                                        <th>Investor Name</th>
+                                        <th class="text-right">Amount (₹)</th>
+                                        <th class="text-right">Units</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${r.investors.map(inv => `
+                                        <tr>
+                                            <td>${this.escapeHtml(inv.investor_name)}</td>
+                                            <td class="text-right"><span class="amount-text">${this.formatCurrency(inv.amount)}</span></td>
+                                            <td class="text-right">${this.formatNumber(inv.units)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </td>
                 </tr>
             `).join('');
+        }
+
+        // Setup accordion click handlers using delegation if not already set
+        if (!tbody.dataset.accordionWired) {
+            tbody.dataset.accordionWired = 'true';
+            tbody.addEventListener('click', (e) => {
+                const parentRow = e.target.closest('.accordion-parent-row');
+                if (!parentRow) return;
+                
+                const targetId = parentRow.dataset.target;
+                const childRow = document.getElementById(targetId);
+                if (childRow) {
+                    const isExpanded = parentRow.classList.toggle('expanded');
+                    childRow.classList.toggle('hidden', !isExpanded);
+                }
+            });
         }
 
         this.updatePagination('fund', page, data.length);
@@ -1042,35 +1159,77 @@ class WealthifyApp {
         const investorsList = MOCK_DATA['/investors/list'] || [];
         const fundsList = MOCK_DATA['/funds/list'] || [];
 
+        // 1. Investor Summary (Nested)
         const invSumMap = {};
         txns.forEach(t => {
             const inv = investorsList.find(i => i.id === t.investor_id);
             const fnd = fundsList.find(f => f.id === t.fund_id);
             if (inv && fnd) {
-                const key = `${inv.name}|||${fnd.name}`;
-                if (!invSumMap[key]) {
-                    invSumMap[key] = { investor_name: inv.name, mutual_fund: fnd.name, total_amount: 0, total_units: 0 };
+                if (!invSumMap[inv.name]) {
+                    invSumMap[inv.name] = {
+                        investor_name: inv.name,
+                        total_amount: 0,
+                        total_units: 0,
+                        fundsMap: {}
+                    };
                 }
-                invSumMap[key].total_amount += t.amount;
-                invSumMap[key].total_units += t.units;
+                const invData = invSumMap[inv.name];
+                invData.total_amount += t.amount;
+                invData.total_units += t.units;
+
+                if (!invData.fundsMap[fnd.name]) {
+                    invData.fundsMap[fnd.name] = {
+                        mutual_fund: fnd.name,
+                        total_amount: 0,
+                        total_units: 0
+                    };
+                }
+                invData.fundsMap[fnd.name].total_amount += t.amount;
+                invData.fundsMap[fnd.name].total_units += t.units;
             }
         });
-        MOCK_DATA['/investor-summary'] = Object.values(invSumMap);
+        MOCK_DATA['/investor-summary'] = Object.values(invSumMap).map(invData => {
+            const funds = Object.values(invData.fundsMap);
+            delete invData.fundsMap;
+            invData.funds = funds;
+            return invData;
+        }).sort((a, b) => b.total_amount - a.total_amount);
 
+        // 2. Fund Summary (Nested)
         const fundSumMap = {};
         txns.forEach(t => {
             const inv = investorsList.find(i => i.id === t.investor_id);
             const fnd = fundsList.find(f => f.id === t.fund_id);
             if (inv && fnd) {
-                const key = `${fnd.name}|||${inv.name}`;
-                if (!fundSumMap[key]) {
-                    fundSumMap[key] = { mutual_fund: fnd.name, investor_name: inv.name, amount: 0, units: 0 };
+                if (!fundSumMap[fnd.name]) {
+                    fundSumMap[fnd.name] = {
+                        mutual_fund: fnd.name,
+                        total_amount: 0,
+                        total_units: 0,
+                        investorsMap: {}
+                    };
                 }
-                fundSumMap[key].amount += t.amount;
-                fundSumMap[key].units += t.units;
+                const fundData = fundSumMap[fnd.name];
+                fundData.total_amount += t.amount;
+                fundData.total_units += t.units;
+
+                if (!fundData.investorsMap[inv.name]) {
+                    fundData.investorsMap[inv.name] = {
+                        investor_name: inv.name,
+                        amount: 0,
+                        units: 0
+                    };
+                }
+                fundData.investorsMap[inv.name].amount += t.amount;
+                fundData.investorsMap[inv.name].units += t.units;
             }
         });
-        MOCK_DATA['/fund-summary'] = Object.values(fundSumMap);
+        MOCK_DATA['/fund-summary'] = Object.values(fundSumMap).map(fundData => {
+            const investors = Object.values(fundData.investorsMap);
+            delete fundData.investorsMap;
+            fundData.investors = investors;
+            return fundData;
+        }).sort((a, b) => a.mutual_fund.localeCompare(b.mutual_fund));
 
         const invMap = {};
         txns.forEach(t => {

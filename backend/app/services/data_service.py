@@ -30,30 +30,49 @@ class DataService:
         page: int = 1,
         limit: int = 10,
     ) -> List[Dict]:
-        q = db.query(
+        q_invs = db.query(
             Investor.name.label("investor_name"),
-            Fund.name.label("mutual_fund"),
             func.sum(Transaction.amount).label("total_amount"),
             func.sum(Transaction.units).label("total_units"),
-        ).join(Transaction.investor).join(Transaction.fund)
-        q = self._apply_date_filter(q, start_date, end_date)
+        ).join(Transaction.investor)
+        q_invs = self._apply_date_filter(q_invs, start_date, end_date)
         if search:
-            q = q.filter(Investor.name.ilike(f"%{search}%"))
-
-        q = (
-            q.group_by(Investor.name, Fund.name)
+            q_invs = q_invs.filter(Investor.name.ilike(f"%{search}%"))
+        
+        q_invs = (
+            q_invs.group_by(Investor.name)
             .order_by(func.sum(Transaction.amount).desc())
         )
-        rows = q.offset((page - 1) * limit).limit(limit).all()
-        return [
-            {
-                "investor_name": r.investor_name,
-                "mutual_fund": r.mutual_fund,
-                "total_amount": float(r.total_amount or 0),
-                "total_units": float(r.total_units or 0),
-            }
-            for r in rows
-        ]
+        inv_rows = q_invs.offset((page - 1) * limit).limit(limit).all()
+
+        results = []
+        for inv_r in inv_rows:
+            q_funds = db.query(
+                Fund.name.label("mutual_fund"),
+                func.sum(Transaction.amount).label("total_amount"),
+                func.sum(Transaction.units).label("total_units"),
+            ).join(Transaction.fund).join(Transaction.investor).filter(Investor.name == inv_r.investor_name)
+            q_funds = self._apply_date_filter(q_funds, start_date, end_date)
+            q_funds = (
+                q_funds.group_by(Fund.name)
+                .order_by(func.sum(Transaction.amount).desc())
+            )
+            fund_rows = q_funds.all()
+
+            results.append({
+                "investor_name": inv_r.investor_name,
+                "total_amount": float(inv_r.total_amount or 0),
+                "total_units": float(inv_r.total_units or 0),
+                "funds": [
+                    {
+                        "mutual_fund": fr.mutual_fund,
+                        "total_amount": float(fr.total_amount or 0),
+                        "total_units": float(fr.total_units or 0),
+                    }
+                    for fr in fund_rows
+                ]
+            })
+        return results
 
     # ------------------------------------------------------------------ #
     #  Fund Summary: grouped by (mutual_fund, investor_name)               #
@@ -66,27 +85,47 @@ class DataService:
         page: int = 1,
         limit: int = 10,
     ) -> List[Dict]:
-        q = db.query(
+        q_funds = db.query(
             Fund.name.label("mutual_fund"),
-            Investor.name.label("investor_name"),
-            func.sum(Transaction.amount).label("amount"),
-            func.sum(Transaction.units).label("units"),
-        ).join(Transaction.investor).join(Transaction.fund)
-        q = self._apply_date_filter(q, start_date, end_date)
-        q = (
-            q.group_by(Fund.name, Investor.name)
-            .order_by(Fund.name, func.sum(Transaction.amount).desc())
+            func.sum(Transaction.amount).label("total_amount"),
+            func.sum(Transaction.units).label("total_units"),
+        ).join(Transaction.fund)
+        q_funds = self._apply_date_filter(q_funds, start_date, end_date)
+        
+        q_funds = (
+            q_funds.group_by(Fund.name)
+            .order_by(Fund.name)
         )
-        rows = q.offset((page - 1) * limit).limit(limit).all()
-        return [
-            {
-                "mutual_fund": r.mutual_fund,
-                "investor_name": r.investor_name,
-                "amount": float(r.amount or 0),
-                "units": float(r.units or 0),
-            }
-            for r in rows
-        ]
+        fund_rows = q_funds.offset((page - 1) * limit).limit(limit).all()
+
+        results = []
+        for fund_r in fund_rows:
+            q_invs = db.query(
+                Investor.name.label("investor_name"),
+                func.sum(Transaction.amount).label("amount"),
+                func.sum(Transaction.units).label("units"),
+            ).join(Transaction.investor).join(Transaction.fund).filter(Fund.name == fund_r.mutual_fund)
+            q_invs = self._apply_date_filter(q_invs, start_date, end_date)
+            q_invs = (
+                q_invs.group_by(Investor.name)
+                .order_by(func.sum(Transaction.amount).desc())
+            )
+            inv_rows = q_invs.all()
+
+            results.append({
+                "mutual_fund": fund_r.mutual_fund,
+                "total_amount": float(fund_r.total_amount or 0),
+                "total_units": float(fund_r.total_units or 0),
+                "investors": [
+                    {
+                        "investor_name": ir.investor_name,
+                        "amount": float(ir.amount or 0),
+                        "units": float(ir.units or 0),
+                    }
+                    for ir in inv_rows
+                ]
+            })
+        return results
 
     # ------------------------------------------------------------------ #
     #  All Investors: grouped by (investor_name, pan_number)               #

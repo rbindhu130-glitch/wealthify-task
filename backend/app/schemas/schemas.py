@@ -1,22 +1,36 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import date as date_type
 
 # ── Existing Dashboard Response Schemas ──
 
-class InvestorSummaryResponse(BaseModel):
-    investor_name: str
+class InvestorSummaryDetail(BaseModel):
     mutual_fund: str
     total_amount: float
     total_units: float
 
     model_config = {"from_attributes": True}
 
-class FundSummaryResponse(BaseModel):
-    mutual_fund: str
+class InvestorSummaryResponse(BaseModel):
+    investor_name: str
+    total_amount: float
+    total_units: float
+    funds: List[InvestorSummaryDetail]
+
+    model_config = {"from_attributes": True}
+
+class FundSummaryDetail(BaseModel):
     investor_name: str
     amount: float
     units: float
+
+    model_config = {"from_attributes": True}
+
+class FundSummaryResponse(BaseModel):
+    mutual_fund: str
+    total_amount: float
+    total_units: float
+    investors: List[FundSummaryDetail]
 
     model_config = {"from_attributes": True}
 
