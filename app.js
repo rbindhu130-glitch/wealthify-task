@@ -619,10 +619,11 @@ class WealthifyApp {
     }
 
     renderCharts(data) {
-        const fullLabels = data.map(d => d.mutual_fund);
-        const truncatedLabels = data.map(d => this.truncateLabel(d.mutual_fund, 25));
-        const amounts = data.map(d => d.total_amount);
-        const units   = data.map(d => d.total_units);
+        const sortedData = [...data].sort((a, b) => b.total_amount - a.total_amount);
+        const fullLabels = sortedData.map(d => d.mutual_fund);
+        const truncatedLabels = sortedData.map(d => this.truncateLabel(d.mutual_fund, 25));
+        const amounts = sortedData.map(d => d.total_amount);
+        const units   = sortedData.map(d => d.total_units);
         const colors  = this.getThemeColors();
 
         const chartColors = [
