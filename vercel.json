@@ -1,11 +1,8 @@
 {
-  "experimentalServices": {
-    "frontend": {
-      "routePrefix": "/"
-    },
-    "backend": {
-      "root": "backend",
-      "routePrefix": "/api"
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
     }
-  }
+  ]
 }
