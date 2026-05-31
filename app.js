@@ -836,9 +836,12 @@ class WealthifyApp {
     // ═════════════════════════════════════════════════════════════
     escapeHtml(str) {
         if (!str) return '';
-        const div = document.createElement('div');
-        div.textContent = str;
-        return div.innerHTML;
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
 
     truncateLabel(text, max = 25) {
@@ -1281,4 +1284,6 @@ class WealthifyApp {
 // ─────────────────────────────────────────────────────────────────
 // BOOT
 // ─────────────────────────────────────────────────────────────────
-const app = new WealthifyApp();
+document.addEventListener('DOMContentLoaded', () => {
+    window.app = new WealthifyApp();
+});
